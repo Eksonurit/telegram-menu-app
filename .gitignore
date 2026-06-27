@@ -1,0 +1,33 @@
+# Залежності
+node_modules/
+
+# Збірка
+dist/
+build/
+*.tsbuildinfo
+
+# Середовище
+.env
+.env.local
+.env.*.local
+
+# Логи
+logs/
+*.log
+npm-debug.log*
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Тести / покриття
+coverage/
+
+# Vite
+client/dist/
+
+# Server
+server/dist/

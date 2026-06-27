@@ -1,0 +1,91 @@
+.photo-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.photo-upload__input {
+  display: none;
+}
+
+.photo-upload__pick-btn,
+.photo-upload__submit-btn {
+  width: 100%;
+  padding: 14px 16px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.photo-upload__pick-btn {
+  background-color: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  color: var(--tg-theme-text-color, #000000);
+}
+
+.photo-upload__submit-btn {
+  background-color: var(--tg-theme-button-color, #2481cc);
+  color: var(--tg-theme-button-text-color, #ffffff);
+}
+
+.photo-upload__pick-btn:disabled,
+.photo-upload__submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.photo-upload__hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--tg-theme-hint-color, #707579);
+  text-align: center;
+}
+
+.photo-upload__previews {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.photo-upload__preview-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: var(--tg-theme-secondary-bg-color, #f4f4f5);
+}
+
+.photo-upload__preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-upload__remove-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #ffffff;
+  font-size: 1.125rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.photo-upload__error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background-color: rgba(229, 57, 53, 0.12);
+  color: #c62828;
+  font-size: 0.875rem;
+}

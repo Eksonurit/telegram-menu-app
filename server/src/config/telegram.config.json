@@ -1,0 +1,32 @@
+{
+  "bot": {
+    "name": "Recipe Mini App Bot",
+    "description": "Розумний помічник для підбору рецептів за фотографіями продуктів",
+    "shortDescription": "Рецепти з фото продуктів",
+    "commands": [
+      {
+        "command": "start",
+        "description": "Відкрити Mini App та почати роботу"
+      },
+      {
+        "command": "help",
+        "description": "Довідка щодо використання бота"
+      }
+    ],
+    "menuButton": {
+      "type": "web_app",
+      "text": "Відкрити додаток",
+      "urlEnvKey": "TELEGRAM_MINI_APP_URL"
+    }
+  },
+  "miniApp": {
+    "title": "Рецепти з фото",
+    "platform": "telegram_web_app",
+    "features": [
+      "photo_upload",
+      "ai_ingredient_recognition",
+      "recipe_generation",
+      "nutrition_info"
+    ]
+  }
+}
