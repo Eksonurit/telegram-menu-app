@@ -25,7 +25,10 @@ export const photoUploadMiddleware: RequestHandler = multer({
     files: MAX_PHOTOS_PER_REQUEST,
   },
   fileFilter: (_req, file, callback) => {
-    if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
+    const isAllowedMime = ALLOWED_MIME_TYPES.has(file.mimetype);
+    const isAllowedByExt = /\.(jpe?g|png|webp)$/i.test(file.originalname);
+
+    if (!isAllowedMime && !isAllowedByExt) {
       callback(
         new HttpError(
           'Дозволені лише зображення у форматах JPEG, PNG або WebP',
@@ -77,7 +80,10 @@ export function validateImages(images: UploadedImage[]): UploadedImage[] {
   }
 
   for (const image of images) {
-    if (!ALLOWED_MIME_TYPES.has(image.mimeType)) {
+    const isAllowedMime = ALLOWED_MIME_TYPES.has(image.mimeType);
+    const isAllowedByExt = /\.(jpe?g|png|webp)$/i.test(image.originalName);
+
+    if (!isAllowedMime && !isAllowedByExt) {
       throw new HttpError(
         `Непідтримуваний формат файлу: ${image.originalName}`,
         400,

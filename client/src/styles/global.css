@@ -1,3 +1,9 @@
+/* ============================================================
+   Глобальні стилі та дизайн-токени Pic2Recipe
+   Палітра: теракотово-амберна ("апетитна"), кремово-нейтральна
+   ============================================================ */
+
+/* ── Базовий reset ── */
 *,
 *::before,
 *::after {
@@ -9,8 +15,11 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Системний шрифт — нативний вигляд на iOS/Android/desktop */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
 }
@@ -21,4 +30,119 @@ body {
 
 button {
   font: inherit;
+  cursor: pointer;
+}
+
+/* ============================================================
+   ДИЗАЙН-ТОКЕНИ (CSS custom properties)
+   Усі brand-кольори, нутрієнти та тіні — тут.
+   Telegram-теми (--tg-theme-*) використовуємо як overrides
+   для базових bg/text, решта — наші токени.
+   ============================================================ */
+
+:root {
+  /* ── Бренд: теракотово-амберна палітра ── */
+  --p2r-primary: #D9531E;               /* Основний акцент */
+  --p2r-primary-dark: #B8440F;          /* Hover / active */
+  --p2r-primary-light: #FDEADE;         /* Фон secondary-елементів */
+  --p2r-primary-tint: rgba(217, 83, 30, 0.10);
+
+  /* ── Нейтральна "кремова" палітра ── */
+  --p2r-bg-base: #FAF7F4;               /* Основний фон сторінки */
+  --p2r-surface: #FFFFFF;               /* Поверхня карток */
+  --p2r-surface-2: #F4EFE9;             /* Вторинна поверхня, теги */
+  --p2r-border: rgba(28, 20, 16, 0.08); /* Тонкі межі */
+
+  /* ── Текст ── */
+  --p2r-text-primary: #1C1410;
+  --p2r-text-secondary: #7A6C60;
+  --p2r-text-hint: #A09080;
+
+  /* ── КБЖВ (пастельні тінти для нутрієнтів) ── */
+  --p2r-cal-bg:  #FDE8C8; --p2r-cal-fg:  #92400E;  /* Золотистий — калорії */
+  --p2r-pro-bg:  #FDDDD4; --p2r-pro-fg:  #C2410C;  /* Лососевий — білки */
+  --p2r-fat-bg:  #FEF0D0; --p2r-fat-fg:  #854D0E;  /* Мигдальний — жири */
+  --p2r-carb-bg: #D8EDD5; --p2r-carb-fg: #166534;  /* Авокадо — вуглеводи */
+
+  /* ── Тіні (теплі, не холодно-сірі) ── */
+  --p2r-shadow-xs: 0 1px 3px rgba(28, 20, 16, 0.06);
+  --p2r-shadow-sm: 0 2px 8px rgba(28, 20, 16, 0.08);
+  --p2r-shadow-md: 0 6px 24px rgba(28, 20, 16, 0.10);
+  --p2r-shadow-brand: 0 6px 20px rgba(217, 83, 30, 0.30);
+
+  /* ── Радіуси ── */
+  --p2r-radius-sm:  12px;
+  --p2r-radius-md:  18px;
+  --p2r-radius-lg:  24px;
+  --p2r-radius-pill: 999px;
+
+  /* ── Анімації ── */
+  --p2r-ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --p2r-spring: cubic-bezier(0.34, 1.56, 0.64, 1);  /* Spring — злегка пружинний */
+  --p2r-duration-fast: 0.12s;
+  --p2r-duration-base: 0.20s;
+  --p2r-duration-slow: 0.35s;
+}
+
+/* ── Темна тема (перевизначаємо лише p2r-токени) ── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --p2r-primary: #E8693A;
+    --p2r-primary-dark: #D9531E;
+    --p2r-primary-light: rgba(232, 105, 58, 0.16);
+    --p2r-primary-tint: rgba(232, 105, 58, 0.12);
+
+    --p2r-bg-base: #141210;
+    --p2r-surface: #1E1B18;
+    --p2r-surface-2: #272219;
+    --p2r-border: rgba(255, 255, 255, 0.08);
+
+    --p2r-text-primary: #F5F0EB;
+    --p2r-text-secondary: #A09080;
+    --p2r-text-hint: #7A6C60;
+
+    --p2r-cal-bg:  rgba(253, 232, 200, 0.13); --p2r-cal-fg:  #FBB95A;
+    --p2r-pro-bg:  rgba(253, 221, 212, 0.13); --p2r-pro-fg:  #F08070;
+    --p2r-fat-bg:  rgba(254, 240, 208, 0.13); --p2r-fat-fg:  #D4A558;
+    --p2r-carb-bg: rgba(216, 237, 213, 0.13); --p2r-carb-fg: #5CA86A;
+
+    --p2r-shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.25);
+    --p2r-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.30);
+    --p2r-shadow-md: 0 6px 24px rgba(0, 0, 0, 0.40);
+    --p2r-shadow-brand: 0 6px 20px rgba(232, 105, 58, 0.22);
+  }
+}
+
+/* ============================================================
+   SHARED KEYFRAMES — доступні у всіх файлах стилів
+   ============================================================ */
+
+@keyframes p2r-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes p2r-slide-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes p2r-scale-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes p2r-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+@keyframes p2r-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes p2r-shimmer {
+  from { background-position: -200% center; }
+  to   { background-position:  200% center; }
 }

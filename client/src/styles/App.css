@@ -1,70 +1,156 @@
+/* ============================================================
+   App — головний контейнер
+   ============================================================ */
+
 .app {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  /* Кремовий фон із Telegram-fallback */
   padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
-  background-color: var(--tg-theme-bg-color, #ffffff);
-  color: var(--tg-theme-text-color, #000000);
+  background-color: var(--tg-theme-bg-color, var(--p2r-bg-base));
+  color: var(--tg-theme-text-color, var(--p2r-text-primary));
+  animation: p2r-fade-in var(--p2r-duration-slow) var(--p2r-ease);
 }
 
+/* ── Шапка ── */
 .app__header {
-  padding: 16px 0;
+  padding: 18px 0 12px;
 }
 
+.app__header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.app__header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Заголовок із теплим акцентом-рискою під ним */
 .app__title {
   margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  color: var(--tg-theme-text-color, var(--p2r-text-primary));
+}
+
+.app__title::after {
+  content: '';
+  display: block;
+  width: 28px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--p2r-primary);
+  margin-top: 7px;
 }
 
 .app__subtitle {
-  margin: 8px 0 0;
+  margin: 10px 0 0;
   font-size: 0.875rem;
-  color: var(--tg-theme-hint-color, #707579);
+  line-height: 1.5;
+  color: var(--tg-theme-hint-color, var(--p2r-text-secondary));
 }
 
+/* ── Основна ділянка ── */
 .app__main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
+  padding-bottom: 20px;
 }
 
-.app__status {
-  padding: 12px 16px;
-  border-radius: 12px;
-  background-color: var(--tg-theme-secondary-bg-color, #f4f4f5);
-  font-size: 0.875rem;
-}
-
-.app__status--loading {
-  text-align: center;
-}
-
-.app__status--error {
-  background-color: rgba(229, 57, 53, 0.12);
-  color: #c62828;
-}
-
-.app__status--warning {
-  background-color: rgba(255, 152, 0, 0.12);
-  color: #e65100;
-}
-
+/* ── Привітання ── */
 .app__greeting {
   margin: 0;
   font-size: 0.9375rem;
-  color: var(--tg-theme-hint-color, #707579);
+  font-weight: 500;
+  color: var(--p2r-primary);
+  animation: p2r-slide-up var(--p2r-duration-base) var(--p2r-ease);
 }
 
+/* ── Статусні банери ── */
+.app__status {
+  padding: 13px 16px;
+  border-radius: var(--p2r-radius-md);
+  background-color: var(--tg-theme-secondary-bg-color, var(--p2r-surface-2));
+  font-size: 0.875rem;
+  line-height: 1.5;
+  animation: p2r-slide-up var(--p2r-duration-base) var(--p2r-ease);
+}
+
+/* Завантаження — пульсуючий ефект з крапками */
+.app__status--loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--tg-theme-text-color, var(--p2r-text-primary));
+}
+
+/* Маленький спінер перед текстом завантаження */
+.app__status--loading::before {
+  content: '';
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--p2r-primary-light);
+  border-top-color: var(--p2r-primary);
+  border-radius: 50%;
+  animation: p2r-spin 0.8s linear infinite;
+}
+
+.app__status--error {
+  background-color: rgba(229, 57, 53, 0.10);
+  color: #c62828;
+  border: 1px solid rgba(229, 57, 53, 0.18);
+}
+
+.app__status--warning {
+  background-color: rgba(217, 83, 30, 0.09);
+  color: var(--p2r-primary-dark);
+  border: 1px solid var(--p2r-primary-tint);
+}
+
+/* ── Кнопка "завантажити нові фото" ── */
 .app__reset-btn {
   width: 100%;
-  padding: 14px 16px;
-  border: none;
-  border-radius: 12px;
-  background-color: var(--tg-theme-secondary-bg-color, #f4f4f5);
-  color: var(--tg-theme-text-color, #000000);
+  padding: 15px 16px;
+  border: 1.5px solid var(--p2r-border);
+  border-radius: var(--p2r-radius-md);
+  background-color: transparent;
+  color: var(--tg-theme-text-color, var(--p2r-text-primary));
   font-size: 1rem;
   font-weight: 600;
-  cursor: pointer;
+  letter-spacing: -0.01em;
+  transition:
+    background-color var(--p2r-duration-fast) var(--p2r-ease),
+    border-color var(--p2r-duration-fast) var(--p2r-ease),
+    transform var(--p2r-duration-fast) var(--p2r-spring);
+}
+
+@media (hover: hover) {
+  .app__reset-btn:hover {
+    background-color: var(--p2r-surface-2);
+    border-color: var(--p2r-primary-light);
+  }
+}
+
+.app__reset-btn:active {
+  transform: scale(0.98);
+}
+
+/* Темна тема: межа стає трохи яскравіша */
+@media (prefers-color-scheme: dark) {
+  .app__status--error {
+    color: #ef9a9a;
+  }
+  .app__status--warning {
+    color: var(--p2r-primary);
+  }
 }

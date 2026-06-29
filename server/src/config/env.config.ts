@@ -31,13 +31,29 @@ function getRequiredEnv(key: string): string {
 export function loadConfig(): ServerConfig {
   const nodeEnv = getEnv('NODE_ENV', 'development');
 
+  const corsOrigin = getEnv('CORS_ORIGIN', 'http://localhost:5173')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  const miniAppUrl = getEnv('TELEGRAM_MINI_APP_URL');
+
+  // У dev автоматично додаємо origin Mini App (ngrok) до CORS
+  if (nodeEnv === 'development' && miniAppUrl) {
+    try {
+      const ngrokOrigin = new URL(miniAppUrl).origin;
+      if (!corsOrigin.includes(ngrokOrigin)) {
+        corsOrigin.push(ngrokOrigin);
+      }
+    } catch {
+      // Ігноруємо невалідний URL
+    }
+  }
+
   return {
     port: Number(getEnv('PORT', '3000')),
     nodeEnv,
-    corsOrigin: getEnv('CORS_ORIGIN', 'http://localhost:5173')
-      .split(',')
-      .map((origin) => origin.trim())
-      .filter(Boolean),
+    corsOrigin,
     telegram: {
       botToken: getEnv('TELEGRAM_BOT_TOKEN'),
       botUsername: getEnv('TELEGRAM_BOT_USERNAME'),

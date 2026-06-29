@@ -16,6 +16,13 @@ export default defineConfig(({ mode }) => {
       host: true,
       port: Number(env.VITE_DEV_PORT) || 5173,
       allowedHosts: true,
+      // Проксі API на бекенд — один ngrok-тунель на фронтенд достатньо для Telegram
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+        },
+      },
     },
     build: {
       outDir: 'dist',

@@ -1,48 +1,104 @@
+/* ============================================================
+   PhotoUpload — завантаження фото продуктів
+   ============================================================ */
+
 .photo-upload {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  animation: p2r-slide-up var(--p2r-duration-base) var(--p2r-ease);
 }
 
+/* Прихований input */
 .photo-upload__input {
   display: none;
 }
 
-.photo-upload__pick-btn,
-.photo-upload__submit-btn {
+/* ── Кнопка "обрати фото" (вторинна) ── */
+.photo-upload__pick-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
-  padding: 14px 16px;
-  border: none;
-  border-radius: 12px;
+  padding: 15px 20px;
+  border: 1.5px dashed var(--p2r-primary-light);
+  border-radius: var(--p2r-radius-md);
+  background-color: var(--tg-theme-secondary-bg-color, var(--p2r-surface-2));
+  color: var(--tg-theme-text-color, var(--p2r-text-primary));
   font-size: 1rem;
   font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.2s ease;
+  letter-spacing: -0.01em;
+  transition:
+    border-color var(--p2r-duration-fast) var(--p2r-ease),
+    background-color var(--p2r-duration-fast) var(--p2r-ease),
+    transform var(--p2r-duration-fast) var(--p2r-spring);
 }
 
-.photo-upload__pick-btn {
-  background-color: var(--tg-theme-secondary-bg-color, #f4f4f5);
-  color: var(--tg-theme-text-color, #000000);
+@media (hover: hover) {
+  .photo-upload__pick-btn:hover:not(:disabled) {
+    border-color: var(--p2r-primary);
+    background-color: var(--p2r-primary-light);
+  }
 }
 
+.photo-upload__pick-btn:active:not(:disabled) {
+  transform: scale(0.98);
+  border-color: var(--p2r-primary);
+}
+
+/* ── Кнопка "підібрати рецепти" (основна CTA) ── */
 .photo-upload__submit-btn {
-  background-color: var(--tg-theme-button-color, #2481cc);
-  color: var(--tg-theme-button-text-color, #ffffff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 15px 20px;
+  border: none;
+  border-radius: var(--p2r-radius-md);
+  /* Теракотово-амберний градієнт */
+  background: linear-gradient(135deg, #E05820 0%, #C94815 100%);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  box-shadow: var(--p2r-shadow-brand);
+  transition:
+    transform var(--p2r-duration-fast) var(--p2r-spring),
+    box-shadow var(--p2r-duration-fast) var(--p2r-ease),
+    opacity var(--p2r-duration-fast) var(--p2r-ease);
 }
 
+@media (hover: hover) {
+  .photo-upload__submit-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(217, 83, 30, 0.40);
+  }
+}
+
+.photo-upload__submit-btn:active:not(:disabled) {
+  transform: scale(0.97);
+  box-shadow: 0 3px 10px rgba(217, 83, 30, 0.25);
+}
+
+/* Вимкнений стан */
 .photo-upload__pick-btn:disabled,
 .photo-upload__submit-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
+/* ── Підказка ── */
 .photo-upload__hint {
   margin: 0;
   font-size: 0.8125rem;
-  color: var(--tg-theme-hint-color, #707579);
+  color: var(--tg-theme-hint-color, var(--p2r-text-hint));
   text-align: center;
 }
 
+/* ── Прев'ю-сітка ── */
 .photo-upload__previews {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -50,42 +106,65 @@
   margin: 0;
   padding: 0;
   list-style: none;
+  animation: p2r-scale-in var(--p2r-duration-base) var(--p2r-ease);
 }
 
 .photo-upload__preview-item {
   position: relative;
   aspect-ratio: 1;
-  border-radius: 12px;
+  border-radius: var(--p2r-radius-sm);
   overflow: hidden;
-  background-color: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  background-color: var(--tg-theme-secondary-bg-color, var(--p2r-surface-2));
+  box-shadow: var(--p2r-shadow-xs);
 }
 
 .photo-upload__preview-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
+/* Кнопка видалення фото */
 .photo-upload__remove-btn {
   position: absolute;
   top: 6px;
   right: 6px;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   border-radius: 50%;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   color: #ffffff;
-  font-size: 1.125rem;
+  font-size: 1rem;
   line-height: 1;
-  cursor: pointer;
+  transition: transform var(--p2r-duration-fast) var(--p2r-spring);
 }
 
+.photo-upload__remove-btn:active {
+  transform: scale(0.88);
+}
+
+/* ── Помилка валідації ── */
 .photo-upload__error {
   margin: 0;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background-color: rgba(229, 57, 53, 0.12);
+  padding: 11px 14px;
+  border-radius: var(--p2r-radius-sm);
+  background-color: rgba(229, 57, 53, 0.09);
+  border: 1px solid rgba(229, 57, 53, 0.18);
   color: #c62828;
   font-size: 0.875rem;
+  line-height: 1.45;
+  animation: p2r-slide-up var(--p2r-duration-fast) var(--p2r-ease);
+}
+
+@media (prefers-color-scheme: dark) {
+  .photo-upload__error {
+    color: #ef9a9a;
+  }
 }

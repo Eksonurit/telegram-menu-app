@@ -1,4 +1,4 @@
-import { appConfig } from '@/config/app.config';
+import { buildApiEndpoint } from '@/config/app.config';
 
 interface ApiErrorBody {
   message?: string;
@@ -27,7 +27,7 @@ export async function apiRequest<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const url = `${appConfig.apiUrl}${path}`;
+  const url = buildApiEndpoint(path);
 
   const response = await fetch(url, {
     ...options,

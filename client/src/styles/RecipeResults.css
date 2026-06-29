@@ -1,7 +1,12 @@
+/* ============================================================
+   RecipeResults — результати аналізу: інгредієнти + рецепти
+   ============================================================ */
+
 .recipe-results {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
+  animation: p2r-slide-up var(--p2r-duration-slow) var(--p2r-ease);
 }
 
 .recipe-results__section {
@@ -12,10 +17,17 @@
 
 .recipe-results__heading {
   margin: 0;
-  font-size: 1.125rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--tg-theme-text-color, var(--p2r-text-primary));
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: var(--tg-theme-hint-color, var(--p2r-text-hint));
 }
 
+/* ── Теги інгредієнтів ── */
 .recipe-results__ingredients {
   display: flex;
   flex-wrap: wrap;
@@ -26,64 +38,135 @@
 }
 
 .recipe-results__ingredient {
-  padding: 6px 12px;
-  border-radius: 999px;
-  background-color: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  padding: 6px 13px;
+  border-radius: var(--p2r-radius-pill);
+  /* Теплий кремовий тег з акцентним тінтом */
+  background-color: var(--tg-theme-secondary-bg-color, var(--p2r-surface-2));
+  border: 1px solid var(--p2r-border);
   font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--tg-theme-text-color, var(--p2r-text-primary));
+  animation: p2r-scale-in var(--p2r-duration-base) var(--p2r-ease);
 }
 
+/* ── Список рецептів ── */
 .recipe-results__list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+/* ── Картка рецепту ── */
 .recipe-results__card {
-  padding: 16px;
-  border-radius: 16px;
-  background-color: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  padding: 20px;
+  border-radius: var(--p2r-radius-lg);       /* 24px — "rounded-3xl" */
+  background-color: var(--tg-theme-secondary-bg-color, var(--p2r-surface));
+  box-shadow: var(--p2r-shadow-sm);
+  border: 1px solid var(--p2r-border);
+  animation: p2r-slide-up var(--p2r-duration-slow) var(--p2r-ease);
+  /* Стаггерований вхід карток через nth-child */
+  animation-fill-mode: both;
 }
+
+/* Невелика затримка для кожної наступної картки */
+.recipe-results__card:nth-child(2) { animation-delay: 0.05s; }
+.recipe-results__card:nth-child(3) { animation-delay: 0.10s; }
 
 .recipe-results__title {
   margin: 0 0 8px;
   font-size: 1.0625rem;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  color: var(--tg-theme-text-color, var(--p2r-text-primary));
 }
 
 .recipe-results__description {
-  margin: 0 0 12px;
+  margin: 0 0 14px;
   font-size: 0.875rem;
-  color: var(--tg-theme-hint-color, #707579);
-  line-height: 1.45;
+  line-height: 1.55;
+  color: var(--tg-theme-hint-color, var(--p2r-text-secondary));
 }
 
+/* ── КБЖВ-рядок ── */
 .recipe-results__nutrition {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 14px;
+  gap: 7px;
+  margin-bottom: 16px;
 }
 
+/* Базовий стиль для будь-якого нутрієнта */
 .recipe-results__nutrition-item {
-  padding: 4px 10px;
+  padding: 5px 11px;
   border-radius: 8px;
-  background-color: var(--tg-theme-bg-color, #ffffff);
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
 }
 
+/* Калорії — золотистий */
+.recipe-results__nutrition-item--calories {
+  background-color: var(--p2r-cal-bg);
+  color: var(--p2r-cal-fg);
+}
+
+/* Білки — лососевий */
+.recipe-results__nutrition-item--protein {
+  background-color: var(--p2r-pro-bg);
+  color: var(--p2r-pro-fg);
+}
+
+/* Жири — мигдальний */
+.recipe-results__nutrition-item--fat {
+  background-color: var(--p2r-fat-bg);
+  color: var(--p2r-fat-fg);
+}
+
+/* Вуглеводи — авокадо-зелений */
+.recipe-results__nutrition-item--carbs {
+  background-color: var(--p2r-carb-bg);
+  color: var(--p2r-carb-fg);
+}
+
+/* ── Кроки приготування ── */
 .recipe-results__steps {
   margin: 0;
-  padding-left: 20px;
+  padding: 0;
+  list-style: none;
+  counter-reset: step-counter;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .recipe-results__step {
+  position: relative;
+  display: flex;
+  gap: 12px;
   font-size: 0.875rem;
-  line-height: 1.45;
+  line-height: 1.55;
+  color: var(--tg-theme-text-color, var(--p2r-text-primary));
+  counter-increment: step-counter;
+}
+
+/* Номер кроку — теракотовий кружечок */
+.recipe-results__step::before {
+  content: counter(step-counter);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: var(--p2r-primary-light);
+  color: var(--p2r-primary);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  margin-top: 1px;
 }

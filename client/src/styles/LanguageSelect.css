@@ -1,0 +1,142 @@
+/* ============================================================
+   Екран вибору мови — мінімалістичний, Apple-стиль
+   Тепла кремова палітра узгоджена з брендом
+   ============================================================ */
+
+.lang-select {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px env(safe-area-inset-bottom);
+  background-color: var(--tg-theme-bg-color, var(--p2r-bg-base));
+  animation: p2r-fade-in var(--p2r-duration-slow) var(--p2r-ease);
+}
+
+.lang-select__content {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Іконка-емодзі з теплою тінню */
+.lang-select__icon {
+  font-size: 3.75rem;
+  line-height: 1;
+  margin-bottom: 22px;
+  filter: drop-shadow(0 6px 16px rgba(217, 83, 30, 0.20));
+  animation: p2r-scale-in 0.4s var(--p2r-spring);
+}
+
+.lang-select__title {
+  margin: 0 0 8px;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--tg-theme-text-color, var(--p2r-text-primary));
+  text-align: center;
+  animation: p2r-slide-up 0.35s var(--p2r-ease) 0.05s both;
+}
+
+.lang-select__subtitle {
+  margin: 0 0 36px;
+  font-size: 0.9375rem;
+  color: var(--tg-theme-hint-color, var(--p2r-text-hint));
+  text-align: center;
+  animation: p2r-slide-up 0.35s var(--p2r-ease) 0.10s both;
+}
+
+/* Список мов */
+.lang-select__list {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: p2r-slide-up 0.35s var(--p2r-ease) 0.15s both;
+}
+
+.lang-select__item {
+  margin: 0;
+  padding: 0;
+}
+
+/* Кнопка-обгортка (прозора, задає клікабельну зону) */
+.lang-select__option {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  text-align: left;
+}
+
+/* Видима картка: прапор + назва */
+.lang-select__label {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 15px 18px;
+  border-radius: var(--p2r-radius-md);
+  background-color: var(--tg-theme-secondary-bg-color, var(--p2r-surface));
+  border: 1px solid var(--p2r-border);
+  box-shadow: var(--p2r-shadow-xs);
+  transition:
+    background-color var(--p2r-duration-fast) var(--p2r-ease),
+    border-color var(--p2r-duration-fast) var(--p2r-ease),
+    transform var(--p2r-duration-fast) var(--p2r-spring),
+    box-shadow var(--p2r-duration-fast) var(--p2r-ease);
+}
+
+/* PNG прапор */
+.lang-select__flag {
+  flex-shrink: 0;
+  display: block;
+  width: 30px;
+  height: 22px;
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.lang-select__name {
+  flex: 1;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, var(--p2r-text-primary));
+  letter-spacing: -0.015em;
+}
+
+@media (hover: hover) {
+  .lang-select__option:hover .lang-select__label {
+    background-color: var(--p2r-primary-light);
+    border-color: var(--p2r-primary-light);
+    box-shadow: var(--p2r-shadow-sm);
+  }
+}
+
+.lang-select__option:active .lang-select__label {
+  transform: scale(0.978);
+  border-color: var(--p2r-primary-light);
+  background-color: var(--p2r-primary-light);
+}
+
+@media (prefers-color-scheme: dark) {
+  @media (hover: hover) {
+    .lang-select__option:hover .lang-select__label {
+      background-color: var(--p2r-primary-tint);
+      border-color: rgba(232, 105, 58, 0.25);
+    }
+  }
+
+  .lang-select__option:active .lang-select__label {
+    background-color: var(--p2r-primary-tint);
+  }
+}

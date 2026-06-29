@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { analyzeProductPhotos } from '@/services/recipe.service';
 import { ApiError } from '@/services/api.service';
+import { analyzeProductPhotos } from '@/services/recipe.service';
 import type {
   AnalyzeRecipesResponse,
   RecipeItem,
@@ -11,6 +11,7 @@ interface RecipeState {
   status: RecipeStatus;
   ingredients: string[];
   recipes: RecipeItem[];
+  /** Рядок помилки або i18n-ключ (App.tsx розрізняє та перекладає) */
   error: string | null;
 }
 
@@ -32,8 +33,8 @@ export const analyzePhotos = createAsyncThunk<
     if (error instanceof ApiError) {
       return rejectWithValue(error.message);
     }
-
-    return rejectWithValue('Не вдалося проаналізувати фото. Спробуйте ще раз.');
+    // Загальна мережева помилка — i18n-ключ, App.tsx переведе
+    return rejectWithValue('errorAnalysisFailed');
   }
 });
 
@@ -62,8 +63,7 @@ export const recipeSlice = createSlice({
       })
       .addCase(analyzePhotos.rejected, (state, action) => {
         state.status = 'error';
-        state.error =
-          action.payload ?? 'Не вдалося проаналізувати фото. Спробуйте ще раз.';
+        state.error = action.payload ?? 'errorAnalysisFailed';
       });
   },
 });
