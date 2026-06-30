@@ -7,7 +7,12 @@ export const es: Translation = {
   initializing: 'Iniciando Telegram Mini App…',
   noTelegramWarning:
     'Estás fuera de Telegram — abre la app desde el bot para analizar fotos.',
-  analyzing: 'Analizando fotos y buscando recetas…',
+  analyzing: 'Detectando ingredientes en tus fotos…',
+  translating: 'Traduciendo recetas…',
+  generating: 'Generando recetas…',
+  addIngredientPlaceholder: 'Añadir ingrediente…',
+  confirmIngredientsBtn: 'Buscar recetas para esta lista',
+  editIngredientsBtn: 'Editar ingredientes',
 
   greeting: '¡Bienvenido, {name}!',
 
@@ -27,9 +32,33 @@ export const es: Translation = {
   ingredientsHeading: 'Ingredientes detectados',
   recipesHeading: 'Recetas ({count})',
   caloriesLabel: '{value} kcal',
-  proteinLabel: 'P: {value} g',
-  fatLabel: 'G: {value} g',
-  carbsLabel: 'C: {value} g',
+  proteinLabel: 'P {value}g',
+  fatLabel: 'G {value}g',
+  carbsLabel: 'C {value}g',
+  tapForRecipe: 'Toca para ver la receta completa →',
+
+  cookingTimeLabel: 'Tiempo de cocción',
+  recipeIngredients: 'Ingredientes',
+  recipeSteps: 'Pasos de cocción',
+  nutritionCalories: 'Calorías',
+  nutritionProtein: 'Proteínas',
+  nutritionFat: 'Grasas',
+  nutritionCarbs: 'Carbohidratos',
+  nutritionUnitKcal: 'kcal',
+  nutritionUnitG: 'g',
+  nutritionPerServing: 'por ración',
+  closeBtn: 'Cerrar',
+
+  attemptsLeft: 'Te quedan {remaining} de {total} generaciones gratuitas hoy',
+  noAttemptsLeft: 'Límite de hoy alcanzado',
+  paywallTitle: 'Límite diario alcanzado',
+  paywallBody:
+    'Has usado todas las {total} generaciones de recetas gratuitas de hoy. ¡Actualiza a Premium y disfruta de inspiración culinaria ilimitada!',
+  paywallUpgradeBtn: 'Actualizar a Premium — 50 ⭐',
+  paywallCloseBtn: 'Cerrar',
+  generateRecipesBtn: 'Buscar mis recetas',
+  uploadBlockedTitle: 'Límite de hoy alcanzado',
+  uploadBlockedBody: 'Ya recibiste tus recetas gratuitas por hoy. Vuelve mañana — o actualiza a Premium para acceso ilimitado.',
 
   resetBtn: 'Subir nuevas fotos',
 

@@ -7,7 +7,12 @@ export const uk: Translation = {
   initializing: 'Ініціалізація Telegram Mini App…',
   noTelegramWarning:
     'Ви поза Telegram — для аналізу фото відкрийте додаток через бота.',
-  analyzing: 'Аналізуємо фото та підбираємо рецепти…',
+  analyzing: 'Розпізнаємо інгредієнти на фото…',
+  translating: 'Перекладаємо рецепти…',
+  generating: 'Генеруємо рецепти…',
+  addIngredientPlaceholder: 'Додати інгредієнт…',
+  confirmIngredientsBtn: 'Підібрати рецепти за цим списком',
+  editIngredientsBtn: 'Змінити інгредієнти',
 
   greeting: 'Вітаємо, {name}!',
 
@@ -27,9 +32,33 @@ export const uk: Translation = {
   ingredientsHeading: 'Знайдені інгредієнти',
   recipesHeading: 'Рецепти ({count})',
   caloriesLabel: '{value} ккал',
-  proteinLabel: 'Б: {value} г',
-  fatLabel: 'Ж: {value} г',
-  carbsLabel: 'В: {value} г',
+  proteinLabel: 'Б {value}г',
+  fatLabel: 'Ж {value}г',
+  carbsLabel: 'В {value}г',
+  tapForRecipe: 'Натисніть для повного рецепта →',
+
+  cookingTimeLabel: 'Час приготування',
+  recipeIngredients: 'Інгредієнти',
+  recipeSteps: 'Кроки приготування',
+  nutritionCalories: 'Калорії',
+  nutritionProtein: 'Білки',
+  nutritionFat: 'Жири',
+  nutritionCarbs: 'Вуглеводи',
+  nutritionUnitKcal: 'ккал',
+  nutritionUnitG: 'г',
+  nutritionPerServing: 'на 1 порцію',
+  closeBtn: 'Закрити',
+
+  attemptsLeft: 'Залишилось {remaining} з {total} безкоштовних генерацій',
+  noAttemptsLeft: 'Ліміт на сьогодні вичерпано',
+  paywallTitle: 'Ліміт вичерпано',
+  paywallBody:
+    'Ви використали всі {total} безкоштовні генерації рецептів за сьогодні. Оновіть до Преміум та насолоджуйтесь необмеженою кулінарною натхненністю!',
+  paywallUpgradeBtn: 'Оновити до Преміум — 50 ⭐',
+  paywallCloseBtn: 'Закрити',
+  generateRecipesBtn: 'Підібрати рецепти',
+  uploadBlockedTitle: 'На сьогодні рецепти вичерпано',
+  uploadBlockedBody: 'Ви вже отримали свої безкоштовні рецепти на сьогодні. Повертайтесь завтра — або оновіться до Преміум для необмеженого доступу.',
 
   resetBtn: 'Завантажити нові фото',
 

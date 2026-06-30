@@ -12,7 +12,20 @@ export interface ServerConfig {
   };
   ai: {
     openaiApiKey: string;
-    googleAiApiKey: string;
+    /** Ключ Google Gemini API (зчитується з GEMINI_API_KEY або GOOGLE_AI_API_KEY) */
+    geminiApiKey: string;
+    /** Назва моделі Gemini (зчитується з GEMINI_MODEL, за замовчуванням gemini-2.5-flash) */
+    geminiModel: string;
+  };
+  imageSearch: {
+    /** Pexels API key для пошуку фото їжі (необов'язково) */
+    pexelsApiKey: string;
+    /** Unsplash access key для пошуку фото їжі (необов'язково, резерв) */
+    unsplashAccessKey: string;
+  };
+  rateLimit: {
+    /** Кількість безкоштовних генерацій рецептів на добу (DAILY_FREE_LIMIT) */
+    dailyFreeLimit: number;
   };
 }
 
@@ -64,7 +77,16 @@ export function loadConfig(): ServerConfig {
     },
     ai: {
       openaiApiKey: getEnv('OPENAI_API_KEY'),
-      googleAiApiKey: getEnv('GOOGLE_AI_API_KEY'),
+      // Підтримуємо обидва імені змінної для зворотної сумісності
+      geminiApiKey: getEnv('GEMINI_API_KEY') || getEnv('GOOGLE_AI_API_KEY'),
+      geminiModel: getEnv('GEMINI_MODEL', 'gemini-2.5-flash'),
+    },
+    imageSearch: {
+      pexelsApiKey: getEnv('PEXELS_API_KEY'),
+      unsplashAccessKey: getEnv('UNSPLASH_ACCESS_KEY'),
+    },
+    rateLimit: {
+      dailyFreeLimit: Number(getEnv('DAILY_FREE_LIMIT', '3')),
     },
   };
 }

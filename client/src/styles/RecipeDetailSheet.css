@@ -1,0 +1,312 @@
+/* ============================================================
+   RecipeDetailSheet — bottom sheet з повним рецептом
+   Дизайн: Apple-like, плавне відкриття знизу вгору
+   ============================================================ */
+
+/* ── Backdrop ── */
+.recipe-sheet__backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.50);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 100;
+  animation: p2r-fade-in var(--p2r-duration-base) var(--p2r-ease);
+}
+
+/* ── Sheet контейнер ── */
+.recipe-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 92dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+
+  background-color: var(--tg-theme-bg-color, var(--p2r-bg-base));
+  border-radius: 24px 24px 0 0;
+  z-index: 101;
+
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+
+  animation: sheetSlideUp 0.36s cubic-bezier(0.34, 1.1, 0.64, 1);
+}
+
+@keyframes sheetSlideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+/* ── Drag handle ── */
+.recipe-sheet__handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background-color: var(--p2r-border);
+  margin: 12px auto 0;
+  flex-shrink: 0;
+}
+
+/* ── Hero зображення ── */
+.recipe-sheet__hero {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  margin-top: 14px;
+}
+
+.recipe-sheet__hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  animation: p2r-fade-in 0.4s var(--p2r-ease);
+}
+
+/* ── Основний контент ── */
+.recipe-sheet__content {
+  padding: 22px 20px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Заголовок + опис ── */
+.recipe-sheet__header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recipe-sheet__title {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+  color: var(--tg-theme-text-color, var(--p2r-text-primary));
+}
+
+.recipe-sheet__desc {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--tg-theme-hint-color, var(--p2r-text-secondary));
+}
+
+/* ── Час приготування ── */
+.recipe-sheet__time {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: var(--p2r-radius-pill);
+  background-color: var(--tg-theme-secondary-bg-color, var(--p2r-surface-2));
+  border: 1px solid var(--p2r-border);
+  align-self: flex-start;
+}
+
+.recipe-sheet__time svg {
+  flex-shrink: 0;
+  color: var(--p2r-primary);
+}
+
+.recipe-sheet__time-label {
+  font-size: 0.875rem;
+  color: var(--tg-theme-hint-color, var(--p2r-text-secondary));
+}
+
+.recipe-sheet__time-value {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--tg-theme-text-color, var(--p2r-text-primary));
+}
+
+/* ── КБЖВ — сітка 2×2 ── */
+.recipe-sheet__macros {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.recipe-sheet__macro-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 12px;
+  border-radius: var(--p2r-radius-md);
+  text-align: center;
+  gap: 2px;
+}
+
+.recipe-sheet__macro-cell--cal  { background-color: var(--p2r-cal-bg); }
+.recipe-sheet__macro-cell--pro  { background-color: var(--p2r-pro-bg); }
+.recipe-sheet__macro-cell--fat  { background-color: var(--p2r-fat-bg); }
+.recipe-sheet__macro-cell--carb { background-color: var(--p2r-carb-bg); }
+
+.recipe-sheet__macro-value {
+  font-size: 1.625rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.recipe-sheet__macro-cell--cal  .recipe-sheet__macro-value { color: var(--p2r-cal-fg); }
+.recipe-sheet__macro-cell--pro  .recipe-sheet__macro-value { color: var(--p2r-pro-fg); }
+.recipe-sheet__macro-cell--fat  .recipe-sheet__macro-value { color: var(--p2r-fat-fg); }
+.recipe-sheet__macro-cell--carb .recipe-sheet__macro-value { color: var(--p2r-carb-fg); }
+
+.recipe-sheet__macro-unit {
+  font-size: 0.8rem;
+  font-weight: 700;
+  opacity: 0.7;
+  line-height: 1.2;
+}
+
+.recipe-sheet__macro-cell--cal  .recipe-sheet__macro-unit { color: var(--p2r-cal-fg); }
+.recipe-sheet__macro-cell--pro  .recipe-sheet__macro-unit { color: var(--p2r-pro-fg); }
+.recipe-sheet__macro-cell--fat  .recipe-sheet__macro-unit { color: var(--p2r-fat-fg); }
+.recipe-sheet__macro-cell--carb .recipe-sheet__macro-unit { color: var(--p2r-carb-fg); }
+
+.recipe-sheet__macro-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-top: 4px;
+  opacity: 0.85;
+}
+
+.recipe-sheet__macro-cell--cal  .recipe-sheet__macro-label { color: var(--p2r-cal-fg); }
+.recipe-sheet__macro-cell--pro  .recipe-sheet__macro-label { color: var(--p2r-pro-fg); }
+.recipe-sheet__macro-cell--fat  .recipe-sheet__macro-label { color: var(--p2r-fat-fg); }
+.recipe-sheet__macro-cell--carb .recipe-sheet__macro-label { color: var(--p2r-carb-fg); }
+
+/* Підпис "на 1 порцію" */
+.recipe-sheet__per-serving {
+  margin: -12px 0 0;
+  font-size: 0.75rem;
+  color: var(--tg-theme-hint-color, var(--p2r-text-hint));
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+/* ── Секції (інгредієнти / кроки) ── */
+.recipe-sheet__section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recipe-sheet__section-title {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--tg-theme-hint-color, var(--p2r-text-hint));
+}
+
+/* ── Список інгредієнтів ── */
+.recipe-sheet__ingredients {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.recipe-sheet__ingredient {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 0;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--tg-theme-text-color, var(--p2r-text-primary));
+  border-bottom: 1px solid var(--p2r-border);
+}
+
+.recipe-sheet__ingredient:last-child {
+  border-bottom: none;
+}
+
+.recipe-sheet__ingredient-dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--p2r-primary);
+  margin-top: 2px;
+}
+
+/* ── Кроки приготування ── */
+.recipe-sheet__steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recipe-sheet__step {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.recipe-sheet__step-num {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--p2r-primary) 0%, var(--p2r-primary-dark) 100%);
+  color: #ffffff;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.recipe-sheet__step-text {
+  flex: 1;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--tg-theme-text-color, var(--p2r-text-primary));
+}
+
+/* ── Кнопка «Закрити» ── */
+.recipe-sheet__close-btn {
+  width: 100%;
+  margin-top: 8px;
+  padding: 15px 20px;
+  border: 1.5px solid var(--p2r-border);
+  border-radius: var(--p2r-radius-md);
+  background-color: transparent;
+  color: var(--tg-theme-text-color, var(--p2r-text-primary));
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition:
+    background-color var(--p2r-duration-fast) var(--p2r-ease),
+    transform var(--p2r-duration-fast) var(--p2r-spring);
+}
+
+@media (hover: hover) {
+  .recipe-sheet__close-btn:hover {
+    background-color: var(--tg-theme-secondary-bg-color, var(--p2r-surface-2));
+  }
+}
+
+.recipe-sheet__close-btn:active {
+  transform: scale(0.98);
+  background-color: var(--p2r-primary-tint);
+}

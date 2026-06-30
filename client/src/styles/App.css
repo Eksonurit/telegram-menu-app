@@ -145,6 +145,64 @@
   transform: scale(0.98);
 }
 
+/* ── Блокована зона завантаження (ліміт вичерпано) ── */
+.app__upload-blocked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 32px 20px;
+  border: 2px dashed var(--p2r-border, #e5e7eb);
+  border-radius: var(--p2r-radius-lg, 16px);
+  background: var(--p2r-surface, #fff);
+  text-align: center;
+  animation: p2r-fade-in var(--p2r-duration-slow) var(--p2r-ease);
+}
+
+.app__upload-blocked-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #fff8f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #E05820;
+}
+
+.app__upload-blocked-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--p2r-text-primary, #0a0a0a);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.app__upload-blocked-body {
+  font-size: 0.875rem;
+  color: var(--p2r-text-secondary, #6b7280);
+  line-height: 1.55;
+  margin: 0;
+  max-width: 300px;
+}
+
+.app__upload-blocked-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 22px;
+  border: 1.5px solid var(--p2r-border, #e5e7eb);
+  border-radius: var(--p2r-radius-md, 12px);
+  background: var(--p2r-surface-alt, #f9fafb);
+  color: var(--p2r-text-secondary, #9ca3af);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: not-allowed;
+  width: 100%;
+  justify-content: center;
+}
+
 /* Темна тема: межа стає трохи яскравіша */
 @media (prefers-color-scheme: dark) {
   .app__status--error {

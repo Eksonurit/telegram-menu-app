@@ -27,7 +27,7 @@
   color: var(--tg-theme-hint-color, var(--p2r-text-hint));
 }
 
-/* ── Теги інгредієнтів ── */
+/* ── Теги інгредієнтів (редаговані) ── */
 .recipe-results__ingredients {
   display: flex;
   flex-wrap: wrap;
@@ -38,15 +38,239 @@
 }
 
 .recipe-results__ingredient {
-  padding: 6px 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 6px 5px 12px;
   border-radius: var(--p2r-radius-pill);
-  /* Теплий кремовий тег з акцентним тінтом */
   background-color: var(--tg-theme-secondary-bg-color, var(--p2r-surface-2));
   border: 1px solid var(--p2r-border);
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--tg-theme-text-color, var(--p2r-text-primary));
   animation: p2r-scale-in var(--p2r-duration-base) var(--p2r-ease);
+  transition: border-color var(--p2r-duration-fast) var(--p2r-ease);
+}
+
+.recipe-results__ingredient-text {
+  line-height: 1;
+}
+
+/* Кнопка × видалити інгредієнт */
+.recipe-results__ingredient-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background-color: var(--p2r-primary-tint);
+  color: var(--p2r-primary);
+  font-size: 0.875rem;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color var(--p2r-duration-fast) var(--p2r-ease),
+    transform var(--p2r-duration-fast) var(--p2r-spring);
+  flex-shrink: 0;
+}
+
+.recipe-results__ingredient-remove:hover {
+  background-color: var(--p2r-primary-light);
+}
+
+.recipe-results__ingredient-remove:active {
+  transform: scale(0.85);
+}
+
+.recipe-results__ingredient-remove:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Рядок додавання інгредієнта ── */
+.recipe-results__add-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.recipe-results__add-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid var(--p2r-border);
+  border-radius: var(--p2r-radius-md);
+  background-color: var(--tg-theme-bg-color, var(--p2r-bg-base));
+  color: var(--tg-theme-text-color, var(--p2r-text-primary));
+  font: inherit;
+  font-size: 0.9375rem;
+  outline: none;
+  transition: border-color var(--p2r-duration-fast) var(--p2r-ease);
+}
+
+.recipe-results__add-input::placeholder {
+  color: var(--tg-theme-hint-color, var(--p2r-text-hint));
+}
+
+.recipe-results__add-input:focus {
+  border-color: var(--p2r-primary);
+}
+
+.recipe-results__add-input:disabled {
+  opacity: 0.5;
+}
+
+/* Кнопка «+» */
+.recipe-results__add-btn {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--p2r-primary-light);
+  border-radius: var(--p2r-radius-md);
+  background-color: var(--p2r-primary-light);
+  color: var(--p2r-primary);
+  font-size: 1.375rem;
+  font-weight: 300;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color var(--p2r-duration-fast) var(--p2r-ease),
+    transform var(--p2r-duration-fast) var(--p2r-spring);
+}
+
+.recipe-results__add-btn:hover:not(:disabled) {
+  background-color: var(--p2r-primary);
+  border-color: var(--p2r-primary);
+  color: #ffffff;
+}
+
+.recipe-results__add-btn:active:not(:disabled) {
+  transform: scale(0.93);
+}
+
+.recipe-results__add-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Кнопка «Підтвердити інгредієнти» ── */
+.recipe-results__confirm-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 13px 20px;
+  border: none;
+  border-radius: var(--p2r-radius-md);
+  background: linear-gradient(135deg, #E05820 0%, #C94815 100%);
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  box-shadow: var(--p2r-shadow-brand);
+  transition:
+    transform var(--p2r-duration-fast) var(--p2r-spring),
+    box-shadow var(--p2r-duration-fast) var(--p2r-ease),
+    opacity var(--p2r-duration-fast) var(--p2r-ease);
+}
+
+.recipe-results__confirm-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(217, 83, 30, 0.40);
+}
+
+.recipe-results__confirm-btn:active:not(:disabled) {
+  transform: scale(0.97);
+  box-shadow: 0 3px 10px rgba(217, 83, 30, 0.25);
+}
+
+.recipe-results__confirm-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ── Read-only тег інгредієнта (без кнопки ×) ── */
+.recipe-results__ingredient--readonly {
+  cursor: default;
+}
+
+/* ── Обгортка кнопки генерації + підказки ── */
+.recipe-results__generate-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+/* ── Варіант кнопки коли ліміт вичерпано ── */
+.recipe-results__confirm-btn--limit {
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+  box-shadow: none;
+}
+
+/* ── Текстова підказка "Залишилось N з 3" ── */
+.recipe-results__attempts-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  justify-content: center;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--p2r-text-secondary, #6b7280);
+  text-align: center;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Коли спроби вичерпано — помаранчеве попередження */
+.recipe-results__attempts-hint--exhausted {
+  color: #E05820;
+  font-weight: 600;
+}
+
+/* ── Кнопка «Змінити інгредієнти» — secondary/outline стиль ── */
+.recipe-results__edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 11px 20px;
+  margin-top: 4px;
+  border: 1.5px solid var(--p2r-primary);
+  border-radius: var(--p2r-radius-md);
+  background: transparent;
+  color: var(--p2r-primary);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition:
+    background-color var(--p2r-duration-fast) var(--p2r-ease),
+    color var(--p2r-duration-fast) var(--p2r-ease),
+    transform var(--p2r-duration-fast) var(--p2r-spring);
+}
+
+.recipe-results__edit-btn:hover:not(:disabled) {
+  background-color: var(--p2r-primary-tint);
+}
+
+.recipe-results__edit-btn:active:not(:disabled) {
+  transform: scale(0.97);
+  background-color: var(--p2r-primary-light);
+}
+
+.recipe-results__edit-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* ── Список рецептів ── */
