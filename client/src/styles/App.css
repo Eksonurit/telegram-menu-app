@@ -191,16 +191,21 @@
   align-items: center;
   gap: 8px;
   padding: 13px 22px;
-  border: 1.5px solid var(--p2r-border, #e5e7eb);
+  border: none;
   border-radius: var(--p2r-radius-md, 12px);
-  background: var(--p2r-surface-alt, #f9fafb);
-  color: var(--p2r-text-secondary, #9ca3af);
+  background: var(--p2r-primary, #f97316);
+  color: #fff;
   font: inherit;
   font-size: 0.9375rem;
   font-weight: 600;
-  cursor: not-allowed;
+  cursor: pointer;
   width: 100%;
   justify-content: center;
+  transition: opacity 0.15s ease;
+}
+
+.app__upload-blocked-btn:active {
+  opacity: 0.85;
 }
 
 /* Темна тема: межа стає трохи яскравіша */

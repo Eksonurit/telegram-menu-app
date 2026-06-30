@@ -12,7 +12,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { generateFromIngredients } from '@/app/slices/recipeSlice';
-import { PaywallModal } from '@/components/PaywallModal';
 import { RecipeCard } from '@/components/RecipeCard';
 import { RecipeDetailSheet } from '@/components/RecipeDetailSheet';
 import { useI18n } from '@/i18n/I18nContext';
@@ -27,7 +26,7 @@ interface RecipeResultsProps {
 export function RecipeResults({ ingredients, recipes }: RecipeResultsProps) {
   const { t } = useI18n();
   const dispatch = useAppDispatch();
-  const { status, remaining, total } = useAppSelector((state) => state.recipe);
+  const { status, remaining, total, isPremium } = useAppSelector((state) => state.recipe);
 
   /** Рецепт у деталях (null = sheet закрито) */
   const [openedRecipe, setOpenedRecipe] = useState<RecipeItem | null>(null);
@@ -59,12 +58,13 @@ export function RecipeResults({ ingredients, recipes }: RecipeResultsProps) {
 
   // ── Стан ліміту ──────────────────────────────────────────────────────────────
 
-  /** Ліміт вичерпано (remaining === 0) */
-  const isLimitReached = remaining !== null && remaining <= 0;
+  /** Ліміт вичерпано (remaining === 0). Преміум ніколи не вичерпується. */
+  const isLimitReached = !isPremium && remaining !== null && remaining <= 0;
 
   /** Текстова підказка під кнопкою генерації */
-  const attemptsHint =
-    remaining === null
+  const attemptsHint = isPremium
+    ? t('premiumUnlimited')
+    : remaining === null
       ? null
       : remaining <= 0
         ? t('noAttemptsLeft')
@@ -99,12 +99,29 @@ export function RecipeResults({ ingredients, recipes }: RecipeResultsProps) {
   };
 
   /**
+   * Миттєвий ref-захист від подвійного кліку.
+   * Доповнює перевірку isGenerating: ref оновлюється синхронно і блокує
+   * повторний виклик ще до того, як Redux встигне переключити статус.
+   */
+  const isGeneratingRef = useRef(false);
+
+  // Синхронізуємо ref зі станом Redux: коли генерація завершилась (успіх/помилка) —
+  // знімаємо блокування, щоб дозволити наступну генерацію.
+  useEffect(() => {
+    if (!isGenerating) {
+      isGeneratingRef.current = false;
+    }
+  }, [isGenerating]);
+
+  /**
    * Запускає генерацію рецептів.
    * Якщо ліміт вичерпано — Redux автоматично встановить limitReached=true,
    * і PaywallModal відкриється. Тут додаткових дій не потрібно.
    */
   const handleGenerate = (ingredientList: string[]) => {
-    if (ingredientList.length === 0 || isGenerating) return;
+    // Подвійний бар'єр: ref (миттєвий) + isGenerating (стан Redux)
+    if (ingredientList.length === 0 || isGenerating || isGeneratingRef.current) return;
+    isGeneratingRef.current = true;
     void dispatch(generateFromIngredients(ingredientList));
   };
 
@@ -165,6 +182,7 @@ export function RecipeResults({ ingredients, recipes }: RecipeResultsProps) {
                 hint={attemptsHint}
                 disabled={isGenerating || editableIngredients.length === 0 || isLimitReached}
                 isLimitReached={isLimitReached}
+                isGenerating={isGenerating}
                 onClick={() => handleGenerate(editableIngredients)}
               />
             </>
@@ -189,6 +207,7 @@ export function RecipeResults({ ingredients, recipes }: RecipeResultsProps) {
                   hint={attemptsHint}
                   disabled={isGenerating || ingredients.length === 0 || isLimitReached}
                   isLimitReached={isLimitReached}
+                  isGenerating={isGenerating}
                   onClick={() => handleGenerate(ingredients)}
                 />
               )}
@@ -234,8 +253,6 @@ export function RecipeResults({ ingredients, recipes }: RecipeResultsProps) {
         onClose={() => setOpenedRecipe(null)}
       />
 
-      {/* ── Paywall ── */}
-      <PaywallModal />
     </>
   );
 }
@@ -247,14 +264,17 @@ interface GenerateButtonProps {
   hint: string | null;
   disabled: boolean;
   isLimitReached: boolean;
+  /** true = генерація триває → показуємо спінер і блокуємо кнопку */
+  isGenerating: boolean;
   onClick: () => void;
 }
 
 /**
  * Кнопка генерації рецептів з лічильником залишку спроб.
  * При вичерпаному ліміті стає disabled і показує попередження.
+ * Під час генерації показує спінер і блокується (захист від спаму запитами).
  */
-function GenerateButton({ label, hint, disabled, isLimitReached, onClick }: GenerateButtonProps) {
+function GenerateButton({ label, hint, disabled, isLimitReached, isGenerating, onClick }: GenerateButtonProps) {
   return (
     <div className="recipe-results__generate-wrap">
       <button
@@ -265,8 +285,9 @@ function GenerateButton({ label, hint, disabled, isLimitReached, onClick }: Gene
         ].filter(Boolean).join(' ')}
         onClick={onClick}
         disabled={disabled}
+        aria-busy={isGenerating}
       >
-        <SparkleIcon />
+        {isGenerating ? <Spinner /> : <SparkleIcon />}
         <span>{label}</span>
       </button>
 
@@ -298,6 +319,24 @@ function SparkleIcon() {
       aria-hidden="true"
     >
       <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .962 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.582a.5.5 0 0 1 0 .962L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.962 0z" />
+    </svg>
+  );
+}
+
+/* ── Інлайн-спінер під час генерації ── */
+function Spinner() {
+  return (
+    <svg
+      className="recipe-results__spinner"
+      width="16" height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
     </svg>
   );
 }

@@ -68,6 +68,15 @@ export function PhotoUpload({ disabled = false }: PhotoUploadProps) {
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [validationError, setValidationError] = useState<string | null>(null);
 
+  /**
+   * Захист від подвійного кліку (double-submit guard).
+   * Стиснення фото асинхронне, тож існує коротке вікно до того, як Redux
+   * переключить статус на 'analyzing'. Ref-прапорець миттєво блокує повторні
+   * виклики ще ДО ре-рендеру — навіть якщо користувач спамить кнопку.
+   */
+  const isSubmittingRef = useRef(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const revokePreviewUrls = useCallback((urls: string[]) => {
     for (const url of urls) {
       URL.revokeObjectURL(url);
@@ -121,12 +130,26 @@ export function PhotoUpload({ disabled = false }: PhotoUploadProps) {
   };
 
   const handleSubmit = () => {
+    // Миттєвий захист: якщо аналіз уже стартував — ігноруємо повторні кліки
+    if (isSubmittingRef.current) return;
+
     if (selectedFiles.length === 0) {
       setValidationError(t('errorNoPhotos'));
       return;
     }
+
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
     setValidationError(null);
-    void dispatch(analyzePhotos(selectedFiles));
+
+    // Стиснення + аналіз. Якщо thunk завершиться помилкою і компонент
+    // лишиться змонтованим — знімаємо блокування, щоб дозволити повторну спробу.
+    void dispatch(analyzePhotos(selectedFiles))
+      .unwrap()
+      .catch(() => {
+        isSubmittingRef.current = false;
+        setIsSubmitting(false);
+      });
   };
 
   return (
@@ -147,7 +170,7 @@ export function PhotoUpload({ disabled = false }: PhotoUploadProps) {
         type="button"
         className="photo-upload__pick-btn"
         onClick={() => inputRef.current?.click()}
-        disabled={disabled}
+        disabled={disabled || isSubmitting}
       >
         <CameraIcon />
         <span>{t('pickPhotosBtn')}</span>
@@ -171,7 +194,7 @@ export function PhotoUpload({ disabled = false }: PhotoUploadProps) {
                 type="button"
                 className="photo-upload__remove-btn"
                 onClick={() => handleRemovePhoto(index)}
-                disabled={disabled}
+                disabled={disabled || isSubmitting}
                 aria-label={t('removePhotoLabel', { n: index + 1 })}
               >
                 ×
@@ -187,16 +210,37 @@ export function PhotoUpload({ disabled = false }: PhotoUploadProps) {
         </p>
       )}
 
-      {/* Основна CTA кнопка — аналіз фото */}
+      {/* Основна CTA кнопка — аналіз фото.
+          Блокується миттєво при першому кліку + показує спінер, щоб користувач
+          фізично не міг відправити кілька важких запитів поспіль. */}
       <button
         type="button"
         className="photo-upload__submit-btn"
         onClick={handleSubmit}
-        disabled={disabled || selectedFiles.length === 0}
+        disabled={disabled || selectedFiles.length === 0 || isSubmitting}
+        aria-busy={isSubmitting}
       >
-        <SparkleIcon />
+        {isSubmitting ? <Spinner /> : <SparkleIcon />}
         <span>{t('submitBtn')}</span>
       </button>
     </section>
+  );
+}
+
+/* ── Інлайн-спінер для стану завантаження кнопки ── */
+function Spinner() {
+  return (
+    <svg
+      className="photo-upload__spinner"
+      width="18" height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+    </svg>
   );
 }

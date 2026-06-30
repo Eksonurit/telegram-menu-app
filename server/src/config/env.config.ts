@@ -6,6 +6,15 @@ export interface ServerConfig {
     botToken: string;
     botUsername: string;
     miniAppUrl: string;
+    /**
+     * Секрет вебхука Telegram. Якщо заданий, він має збігатися із заголовком
+     * X-Telegram-Bot-Api-Secret-Token у вхідних оновленнях (захист ендпоінта).
+     */
+    webhookSecret: string;
+  };
+  payments: {
+    /** Ціна преміуму в Telegram Stars (PREMIUM_PRICE_STARS, дефолт 50) */
+    premiumPriceStars: number;
   };
   database: {
     url: string;
@@ -71,6 +80,10 @@ export function loadConfig(): ServerConfig {
       botToken: getEnv('TELEGRAM_BOT_TOKEN'),
       botUsername: getEnv('TELEGRAM_BOT_USERNAME'),
       miniAppUrl: getEnv('TELEGRAM_MINI_APP_URL'),
+      webhookSecret: getEnv('TELEGRAM_WEBHOOK_SECRET'),
+    },
+    payments: {
+      premiumPriceStars: Number(getEnv('PREMIUM_PRICE_STARS', '50')),
     },
     database: {
       url: getEnv('DATABASE_URL'),
@@ -98,4 +111,5 @@ export function validateProductionConfig(config: ServerConfig): void {
 
   getRequiredEnv('TELEGRAM_BOT_TOKEN');
   getRequiredEnv('TELEGRAM_MINI_APP_URL');
+  getRequiredEnv('DATABASE_URL');
 }

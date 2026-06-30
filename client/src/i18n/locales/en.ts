@@ -28,6 +28,8 @@ export const en: Translation = {
   errorNoInitData:
     'Telegram authorisation unavailable. Open the app through the bot.',
   errorAnalysisFailed: 'Failed to analyse photos. Please try again.',
+  errorPaymentFailed: 'Payment could not be completed. Please try again.',
+  errorPaymentUnavailable: 'Payments are available only inside Telegram.',
 
   ingredientsHeading: 'Detected ingredients',
   recipesHeading: 'Recipes ({count})',
@@ -55,7 +57,12 @@ export const en: Translation = {
   paywallBody:
     "You've used all {total} free recipe generations for today. Upgrade to Premium and enjoy unlimited culinary inspiration!",
   paywallUpgradeBtn: 'Upgrade to Premium — 50 ⭐',
+  paywallProcessing: 'Opening payment…',
   paywallCloseBtn: 'Close',
+  premiumSuccessTitle: "You're Premium! 🎉",
+  premiumSuccessBody: 'Enjoy unlimited recipe generations forever. Bon appétit!',
+  premiumSuccessBtn: 'Start cooking',
+  premiumUnlimited: 'Premium · Unlimited generations',
   generateRecipesBtn: 'Find My Recipes',
   uploadBlockedTitle: "You've reached today's limit",
   uploadBlockedBody: "You've already received your free recipes for today. Come back tomorrow — or upgrade to Premium for unlimited access.",

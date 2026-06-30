@@ -3,32 +3,7 @@ import { useDispatch } from 'react-redux';
 import { setReady, setUser } from '@/app/slices/appSlice';
 import type { TelegramUser } from '@/types';
 
-interface TelegramWebAppUser {
-  id: number;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  language_code?: string;
-}
-
-interface TelegramWebApp {
-  ready: () => void;
-  expand: () => void;
-  initData: string;
-  initDataUnsafe: {
-    user?: TelegramWebAppUser;
-  };
-  themeParams: Record<string, string | undefined>;
-  colorScheme: 'light' | 'dark';
-}
-
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp: TelegramWebApp;
-    };
-  }
-}
+// Типи Telegram WebApp оголошені глобально в src/types/telegram.d.ts
 
 function mapTelegramUser(user: TelegramWebAppUser): TelegramUser {
   return {

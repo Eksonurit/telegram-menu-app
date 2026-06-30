@@ -25,6 +25,7 @@ import type {
 } from '../types/recipe.types.js';
 import { fetchFoodImage } from './image-search.service.js';
 import { HttpError } from '../utils/HttpError.js';
+import { withRetry } from '../utils/retry.utils.js';
 
 // ─── Константи ────────────────────────────────────────────────────────────────
 
@@ -436,7 +437,11 @@ export async function detectIngredientsFromPhotos(
   const contentParts: Part[] = [{ text: promptText }, ...imageParts];
 
   try {
-    const result = await model.generateContent(contentParts);
+    // Стійкий виклик з авто-повторами при 429/503 (тихо у фоні)
+    const result = await withRetry(
+      () => model.generateContent(contentParts),
+      { label: 'detectIngredients' },
+    );
     const response = result.response;
 
     const finishReason = response.candidates?.[0]?.finishReason;
@@ -512,7 +517,11 @@ export async function analyzeProductPhotos(
   const contentParts: Part[] = [{ text: promptText }, ...imageParts];
 
   try {
-    const result = await model.generateContent(contentParts);
+    // Стійкий виклик з авто-повторами при 429/503 (тихо у фоні)
+    const result = await withRetry(
+      () => model.generateContent(contentParts),
+      { label: 'analyzeProductPhotos' },
+    );
     const response = result.response;
 
     // Перевіряємо, чи модель не заблокувала запит через safety filters
@@ -622,7 +631,11 @@ export async function generateRecipesFromText(
   const promptText = buildTextPrompt(ingredients, language);
 
   try {
-    const result   = await model.generateContent([{ text: promptText }]);
+    // Стійкий виклик з авто-повторами при 429/503 (тихо у фоні)
+    const result = await withRetry(
+      () => model.generateContent([{ text: promptText }]),
+      { label: 'generateRecipesFromText' },
+    );
     const response = result.response;
 
     const finishReason = response.candidates?.[0]?.finishReason;

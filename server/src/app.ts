@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -18,8 +20,38 @@ export function createApp(config: ServerConfig): express.Application {
   );
   app.use(express.json({ limit: '10mb' }));
 
+  // ── API маршрути (/api/*) ─────────────────────────────────────────────────
   app.use('/api', createApiRouter(config));
 
+  // ── Роздача фронтенду ─────────────────────────────────────────────────────
+  //
+  // Продакшн: якщо збудований клієнт (client/dist/index.html) існує —
+  // роздаємо його статику, а для всіх нефронтендних шляхів повертаємо
+  // index.html (SPA-режим, React Router сам розрулить маршрути).
+  //
+  // Development: збірки немає; замість сирого JSON 404 відправляємо
+  // редирект на Vite dev-сервер, щоб розробник не заплутався.
+  const clientDist = path.resolve(process.cwd(), '../client/dist');
+
+  if (fs.existsSync(path.join(clientDist, 'index.html'))) {
+    // Продакшн — роздаємо статичні файли
+    app.use(express.static(clientDist));
+
+    // SPA catch-all: будь-який нероутований шлях повертає index.html
+    app.get('*', (_req, res) => {
+      res.sendFile(path.join(clientDist, 'index.html'));
+    });
+  } else {
+    // Development — перенаправляємо на Vite dev-сервер (порт 5173)
+    // Це усуває заплутаний JSON «Маршрут не знайдено» при відкритті localhost:3000
+    const devFrontendUrl = config.telegram.miniAppUrl || 'http://localhost:5173';
+
+    app.get('/', (_req, res) => {
+      res.redirect(302, devFrontendUrl);
+    });
+  }
+
+  // ── Обробники помилок (лише для /api/*) ──────────────────────────────────
   app.use(notFoundHandler);
   app.use(errorHandler);
 

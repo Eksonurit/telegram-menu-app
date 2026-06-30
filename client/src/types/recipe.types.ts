@@ -21,6 +21,8 @@ export interface RecipeItem {
 export interface RateLimitInfo {
   remaining: number;
   total: number;
+  /** true = преміум-користувач (ліміт не діє). Може бути відсутнім у старих відповідях. */
+  isPremium?: boolean;
 }
 
 /**

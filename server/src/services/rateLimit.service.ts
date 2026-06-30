@@ -1,26 +1,30 @@
 /**
  * rateLimit.service.ts
  *
- * Сервіс обмеження щоденних безкоштовних генерацій рецептів.
+ * Сервіс обмеження щоденних безкоштовних генерацій рецептів (зберігання — PostgreSQL).
  *
- * Зберігає ліміти в пам'яті (Map). Ліміт кожного користувача скидається
- * через 24 години після ПЕРШОГО його запиту за поточну добу.
+ * Ліміт кожного користувача скидається через 24 години після ПЕРШОГО його запиту
+ * за поточне вікно. Дані зберігаються в таблиці rate_limits і ПЕРЕЖИВАЮТЬ
+ * перезапуск сервера.
  *
- * ВАЖЛИВО: при перезапуску сервера ліміти скидаються для всіх користувачів.
- * Для продакшн-середовища з кількома інстансами рекомендується замінити
- * сховище на Redis або PostgreSQL.
+ * ПРЕМІУМ: користувачі з активним преміумом (isPremiumUser) обходять ліміт
+ * повністю — для них кожна генерація завжди дозволена, лічильник не чіпається.
+ *
+ * АТОМАРНІСТЬ: списання токена виконується в транзакції з SELECT ... FOR UPDATE,
+ * тож паралельні запити того самого користувача не «прослизнуть» повз ліміт.
  */
 
-/** Запис ліміту для одного користувача */
-interface UserLimitEntry {
-  /** Кількість генерацій, що залишились за поточну добу */
-  remaining: number;
-  /** Unix-таймстемп (мс), коли ліміт скидається (через 24 год після першого запиту) */
-  resetAt: number;
-}
+import { getPool, query } from '../db/pool.js';
+import { isPremiumUser } from './premium.service.js';
 
-/** Тривалість одного вікна — 24 години */
+/** Тривалість одного вікна — 24 години (у мілісекундах) */
 const TTL_MS = 24 * 60 * 60 * 1000;
+
+/** Рядок таблиці rate_limits (reset_at парситься в number у pool.ts) */
+interface RateLimitRow {
+  remaining: number;
+  reset_at: number;
+}
 
 /** Денний ліміт безкоштовних генерацій (зчитується з env або дефолт 3) */
 function getDailyLimit(): number {
@@ -29,56 +33,114 @@ function getDailyLimit(): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 3;
 }
 
-/** Центральне сховище лімітів: userId → UserLimitEntry */
-const limitsStore = new Map<number, UserLimitEntry>();
-
 // ─── Публічний API ─────────────────────────────────────────────────────────────
 
 /**
  * Повертає поточний стан ліміту для користувача БЕЗ зміни лічильника.
  * Використовується для інформаційного відображення у відповідях безкоштовних запитів.
+ *
+ * Для преміум-користувачів повертає isPremium=true, а remaining дорівнює total
+ * (UI трактує це як «безліміт»).
  */
-export function getLimitStatus(userId: number): { remaining: number; total: number } {
+export async function getLimitStatus(userId: number): Promise<{
+  remaining: number;
+  total: number;
+  isPremium: boolean;
+}> {
   const total = getDailyLimit();
-  const now = Date.now();
-  const entry = limitsStore.get(userId);
 
-  // Якщо запису немає або вікно вже закрилось — повний ліміт
-  if (!entry || now >= entry.resetAt) {
-    return { remaining: total, total };
+  // Преміум — ліміт не діє
+  if (await isPremiumUser(userId)) {
+    return { remaining: total, total, isPremium: true };
   }
 
-  return { remaining: entry.remaining, total };
+  const now = Date.now();
+  const result = await query<RateLimitRow>(
+    'SELECT remaining, reset_at FROM rate_limits WHERE user_id = $1',
+    [userId],
+  );
+
+  const entry = result.rows[0];
+
+  // Якщо запису немає або вікно вже закрилось — повний ліміт
+  if (!entry || now >= entry.reset_at) {
+    return { remaining: total, total, isPremium: false };
+  }
+
+  return { remaining: entry.remaining, total, isPremium: false };
 }
 
 /**
- * Перевіряє, чи є доступна спроба, і якщо так — списує одну.
+ * Перевіряє, чи є доступна спроба, і якщо так — атомарно списує одну.
  *
- * @returns allowed  — чи дозволено виконати генерацію
+ * @returns allowed   — чи дозволено виконати генерацію
  * @returns remaining — скільки спроб залишилось ПІСЛЯ цього виклику
  * @returns total     — максимум спроб на добу
+ * @returns isPremium — чи користувач преміум (тоді ліміт не діє)
  */
-export function consumeToken(userId: number): {
+export async function consumeToken(userId: number): Promise<{
   allowed: boolean;
   remaining: number;
   total: number;
-} {
+  isPremium: boolean;
+}> {
   const total = getDailyLimit();
+
+  // Преміум — генерація завжди дозволена, лічильник не чіпаємо
+  if (await isPremiumUser(userId)) {
+    return { allowed: true, remaining: total, total, isPremium: true };
+  }
+
   const now = Date.now();
-  let entry = limitsStore.get(userId);
+  const client = await getPool().connect();
 
-  // Ініціалізація або скидання після закінчення вікна
-  if (!entry || now >= entry.resetAt) {
-    entry = { remaining: total, resetAt: now + TTL_MS };
-    limitsStore.set(userId, entry);
+  try {
+    await client.query('BEGIN');
+
+    // Блокуємо рядок користувача на час транзакції (захист від гонок)
+    const selectResult = await client.query<RateLimitRow>(
+      'SELECT remaining, reset_at FROM rate_limits WHERE user_id = $1 FOR UPDATE',
+      [userId],
+    );
+    const entry = selectResult.rows[0];
+
+    // Випадок 1: запису немає або вікно скинулось → нове вікно, одразу списуємо 1
+    if (!entry || now >= entry.reset_at) {
+      const remaining = total - 1;
+      const resetAt = now + TTL_MS;
+
+      await client.query(
+        `INSERT INTO rate_limits (user_id, remaining, reset_at)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (user_id)
+         DO UPDATE SET remaining = EXCLUDED.remaining, reset_at = EXCLUDED.reset_at`,
+        [userId, remaining, resetAt],
+      );
+
+      await client.query('COMMIT');
+      return { allowed: true, remaining, total, isPremium: false };
+    }
+
+    // Випадок 2: вікно активне, але спроби вичерпано
+    if (entry.remaining <= 0) {
+      await client.query('COMMIT');
+      return { allowed: false, remaining: 0, total, isPremium: false };
+    }
+
+    // Випадок 3: вікно активне, є спроби → списуємо одну
+    const remaining = entry.remaining - 1;
+    await client.query(
+      'UPDATE rate_limits SET remaining = $2 WHERE user_id = $1',
+      [userId, remaining],
+    );
+
+    await client.query('COMMIT');
+    return { allowed: true, remaining, total, isPremium: false };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    // ОБОВ'ЯЗКОВО повертаємо з'єднання в пул
+    client.release();
   }
-
-  if (entry.remaining <= 0) {
-    return { allowed: false, remaining: 0, total };
-  }
-
-  // Списуємо одну спробу
-  entry.remaining -= 1;
-
-  return { allowed: true, remaining: entry.remaining, total };
 }

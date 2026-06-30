@@ -20,6 +20,7 @@ import {
 } from '@google/generative-ai';
 import type { RecipesPayload } from '../types/recipe.types.js';
 import { HttpError } from '../utils/HttpError.js';
+import { withRetry } from '../utils/retry.utils.js';
 
 // ─── Константи ────────────────────────────────────────────────────────────────
 
@@ -181,7 +182,11 @@ export async function translateRecipeData(
   ];
 
   try {
-    const result   = await model.generateContent(parts);
+    // Стійкий виклик з авто-повторами при 429/503 (тихо у фоні)
+    const result = await withRetry(
+      () => model.generateContent(parts),
+      { label: 'translateRecipeData' },
+    );
     const response = result.response;
 
     // Перевірка safety filters

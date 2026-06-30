@@ -3,6 +3,7 @@ import { ApiError } from '@/services/api.service';
 import {
   analyzeProductPhotos,
   generateFromIngredientList,
+  getUserStatus,
   LIMIT_REACHED_KEY,
   translateRecipes as translateRecipesApi,
 } from '@/services/recipe.service';
@@ -10,6 +11,7 @@ import type { Locale } from '@/i18n/types';
 import type {
   AnalyzeRecipesResponse,
   DetectIngredientsResponse,
+  RateLimitInfo,
   RecipeItem,
   RecipeStatus,
 } from '@/types/recipe.types';
@@ -26,6 +28,8 @@ interface RecipeState {
   total: number;
   /** true = ліміт вичерпано → показуємо Paywall */
   limitReached: boolean;
+  /** true = преміум активний → ліміт не діє, генерації безлімітні */
+  isPremium: boolean;
 }
 
 const initialState: RecipeState = {
@@ -36,6 +40,7 @@ const initialState: RecipeState = {
   remaining: null,
   total: 3,
   limitReached: false,
+  isPremium: false,
 };
 
 // ─── Thunks ───────────────────────────────────────────────────────────────────
@@ -76,6 +81,23 @@ export const generateFromIngredients = createAsyncThunk<
 });
 
 /**
+ * Перевірка стану лімітів при старті Mini App (БЕЗКОШТОВНО).
+ * Якщо ліміт вичерпано і преміуму немає — автоматично відкриває paywall.
+ */
+export const fetchUserStatus = createAsyncThunk<
+  RateLimitInfo,
+  void,
+  { rejectValue: string }
+>('recipe/fetchUserStatus', async (_, { rejectWithValue }) => {
+  try {
+    return await getUserStatus();
+  } catch (error) {
+    if (error instanceof ApiError) return rejectWithValue(error.message);
+    return rejectWithValue('errorAnalysisFailed');
+  }
+});
+
+/**
  * Переклад існуючих рецептів на нову мову (БЕЗКОШТОВНО).
  */
 export const translateRecipes = createAsyncThunk<
@@ -111,6 +133,19 @@ export const recipeSlice = createSlice({
     dismissLimitReached: (state) => {
       state.limitReached = false;
     },
+    /** Відкриває paywall-попап вручну (наприклад, кнопка «Upgrade» на заблокованому екрані) */
+    openPaywall: (state) => {
+      state.limitReached = true;
+    },
+    /**
+     * Активує преміум на клієнті ОДРАЗУ після успішної оплати,
+     * не чекаючи на повторний запит до сервера. Прибирає всі обмеження UI.
+     */
+    activatePremium: (state) => {
+      state.isPremium = true;
+      state.limitReached = false;
+      state.remaining = state.total;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -127,6 +162,7 @@ export const recipeSlice = createSlice({
         state.error = null;
         state.remaining = action.payload.rateLimit.remaining;
         state.total = action.payload.rateLimit.total;
+        state.isPremium = action.payload.rateLimit.isPremium ?? state.isPremium;
       })
       .addCase(analyzePhotos.rejected, (state, action) => {
         state.status = 'error';
@@ -146,6 +182,7 @@ export const recipeSlice = createSlice({
         state.error = null;
         state.remaining = action.payload.rateLimit.remaining;
         state.total = action.payload.rateLimit.total;
+        state.isPremium = action.payload.rateLimit.isPremium ?? state.isPremium;
       })
       .addCase(generateFromIngredients.rejected, (state, action) => {
         if (action.payload === LIMIT_REACHED_KEY) {
@@ -162,6 +199,18 @@ export const recipeSlice = createSlice({
         }
       })
 
+      // ── fetchUserStatus (перевірка на старті, БЕЗКОШТОВНО) ────────────────
+      .addCase(fetchUserStatus.fulfilled, (state, action) => {
+        state.remaining = action.payload.remaining;
+        state.total = action.payload.total;
+        state.isPremium = action.payload.isPremium ?? state.isPremium;
+        // Якщо ліміт вичерпано і немає преміуму — відразу показуємо paywall
+        if (!state.isPremium && action.payload.remaining <= 0) {
+          state.limitReached = true;
+        }
+      })
+      // rejected — помилка ігнорується, не заважаємо користувачу
+
       // ── translateRecipes (БЕЗКОШТОВНО) ────────────────────────────────────
       .addCase(translateRecipes.pending, (state) => {
         state.status = 'translating';
@@ -175,6 +224,7 @@ export const recipeSlice = createSlice({
         // Оновлюємо ліміт (переклад не списує, але сервер повертає актуальний стан)
         state.remaining = action.payload.rateLimit.remaining;
         state.total = action.payload.rateLimit.total;
+        state.isPremium = action.payload.rateLimit.isPremium ?? state.isPremium;
       })
       .addCase(translateRecipes.rejected, (state, action) => {
         // При помилці перекладу повертаємо 'success' — старі рецепти залишаються
@@ -184,5 +234,5 @@ export const recipeSlice = createSlice({
   },
 });
 
-export const { resetAnalysis, dismissLimitReached } = recipeSlice.actions;
+export const { resetAnalysis, dismissLimitReached, openPaywall, activatePremium } = recipeSlice.actions;
 export const recipeReducer = recipeSlice.reducer;

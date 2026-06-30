@@ -5,7 +5,9 @@ import type {
   AnalyzeRecipesResponse,
   DetectIngredientsResponse,
   LimitReachedApiResponse,
+  RateLimitInfo,
 } from '@/types/recipe.types';
+import { compressImages } from '@/utils/image-compression.utils';
 import { getTelegramInitData } from '@/utils/telegram.utils';
 
 interface ApiErrorBody {
@@ -47,8 +49,14 @@ export async function analyzeProductPhotos(
     throw new ApiError('errorNoInitData', 401);
   }
 
+  // ── ОПТИМІЗАЦІЯ TPM: стискаємо фото на клієнті ПЕРЕД відправкою ──────────────
+  // Важкі фото зі смартфона (5–10 МБ) миттєво вичерпують ліміт токенів Gemini.
+  // compressImages зменшує сторону до 1024px / ~75% JPEG → файли ~200–300 КБ.
+  // Функція безпечна: при будь-якій помилці повертає оригінал, тож завантаження не зламається.
+  const compressedPhotos = await compressImages(photos);
+
   const formData = new FormData();
-  for (const photo of photos) {
+  for (const photo of compressedPhotos) {
     formData.append('photos', photo, photo.name);
   }
 
@@ -130,6 +138,38 @@ export async function generateFromIngredientList(
 
   try {
     return (await response.json()) as AnalyzeRecipesResponse;
+  } catch {
+    throw new ApiError('errorAnalysisFailed', 500);
+  }
+}
+
+/**
+ * БЕЗКОШТОВНО: перевіряє поточний стан лімітів та преміуму.
+ * Викликається при старті Mini App. Лічильник НЕ списується.
+ */
+export async function getUserStatus(): Promise<RateLimitInfo> {
+  const initData = getTelegramInitData();
+  if (!initData) throw new ApiError('errorNoInitData', 401);
+
+  let response: Response;
+  try {
+    response = await fetch(buildApiEndpoint('/recipes/status'), {
+      method: 'GET',
+      headers: {
+        'X-Telegram-Init-Data': initData,
+      },
+    });
+  } catch {
+    throw new ApiError('errorAnalysisFailed', 0);
+  }
+
+  if (!response.ok) {
+    const message = await parseServerError(response);
+    throw new ApiError(message, response.status);
+  }
+
+  try {
+    return (await response.json()) as RateLimitInfo;
   } catch {
     throw new ApiError('errorAnalysisFailed', 500);
   }

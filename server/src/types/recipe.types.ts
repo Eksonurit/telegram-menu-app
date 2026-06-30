@@ -23,6 +23,8 @@ export interface RateLimitInfo {
   remaining: number;
   /** Максимум спроб на добу */
   total: number;
+  /** true = преміум-користувач (ліміт не діє, генерації безлімітні) */
+  isPremium: boolean;
 }
 
 /**

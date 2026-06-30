@@ -28,6 +28,8 @@ export const uk: Translation = {
   errorNoInitData:
     'Дані авторизації Telegram недоступні. Відкрийте додаток через бота.',
   errorAnalysisFailed: 'Не вдалося проаналізувати фото. Спробуйте ще раз.',
+  errorPaymentFailed: 'Не вдалося завершити оплату. Спробуйте ще раз.',
+  errorPaymentUnavailable: 'Оплата доступна лише всередині Telegram.',
 
   ingredientsHeading: 'Знайдені інгредієнти',
   recipesHeading: 'Рецепти ({count})',
@@ -55,7 +57,12 @@ export const uk: Translation = {
   paywallBody:
     'Ви використали всі {total} безкоштовні генерації рецептів за сьогодні. Оновіть до Преміум та насолоджуйтесь необмеженою кулінарною натхненністю!',
   paywallUpgradeBtn: 'Оновити до Преміум — 50 ⭐',
+  paywallProcessing: 'Відкриваємо оплату…',
   paywallCloseBtn: 'Закрити',
+  premiumSuccessTitle: 'Ви Преміум! 🎉',
+  premiumSuccessBody: 'Насолоджуйтесь безлімітною генерацією рецептів назавжди. Смачного!',
+  premiumSuccessBtn: 'Почати готувати',
+  premiumUnlimited: 'Преміум · Безліміт генерацій',
   generateRecipesBtn: 'Підібрати рецепти',
   uploadBlockedTitle: 'На сьогодні рецепти вичерпано',
   uploadBlockedBody: 'Ви вже отримали свої безкоштовні рецепти на сьогодні. Повертайтесь завтра — або оновіться до Преміум для необмеженого доступу.',

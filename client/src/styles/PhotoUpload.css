@@ -168,3 +168,14 @@
     color: #ef9a9a;
   }
 }
+
+/* ── Спінер на кнопці аналізу (стан завантаження) ── */
+.photo-upload__spinner {
+  animation: p2r-spin 0.7s linear infinite;
+}
+
+@keyframes p2r-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

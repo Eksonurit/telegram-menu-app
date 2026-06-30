@@ -48,6 +48,10 @@ export interface Translation {
   errorNoPhotos: string;
   errorNoInitData: string;
   errorAnalysisFailed: string;
+  /** Загальна помилка під час оплати */
+  errorPaymentFailed: string;
+  /** Оплата недоступна (поза Telegram) */
+  errorPaymentUnavailable: string;
 
   // --- Результати рецептів (список карток) ---
   ingredientsHeading: string;
@@ -92,8 +96,18 @@ export interface Translation {
   paywallBody: string;
   /** Кнопка "Апгрейд до Premium" */
   paywallUpgradeBtn: string;
+  /** Стан кнопки під час відкриття вікна оплати */
+  paywallProcessing: string;
   /** Кнопка закриття paywall */
   paywallCloseBtn: string;
+  /** Заголовок екрана успішної оплати */
+  premiumSuccessTitle: string;
+  /** Текст екрана успішної оплати */
+  premiumSuccessBody: string;
+  /** Кнопка завершення після успішної оплати */
+  premiumSuccessBtn: string;
+  /** Підпис-підказка для преміум-користувача замість лічильника спроб */
+  premiumUnlimited: string;
   /** Основна CTA-кнопка підбору рецептів */
   generateRecipesBtn: string;
   /** Повідомлення у зоні завантаження коли денний ліміт вичерпано */

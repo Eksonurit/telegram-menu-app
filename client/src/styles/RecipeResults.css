@@ -394,3 +394,14 @@
   font-weight: 700;
   margin-top: 1px;
 }
+
+/* ── Спінер на кнопці генерації (стан завантаження) ── */
+.recipe-results__spinner {
+  animation: p2r-spin 0.7s linear infinite;
+}
+
+@keyframes p2r-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

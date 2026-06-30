@@ -16,6 +16,27 @@ import { HttpError } from '../utils/HttpError.js';
 /** Підтримувані коди мов для обох ендпоінтів */
 const SUPPORTED_LOCALES = new Set(['en', 'uk', 'es', 'ru']);
 
+/**
+ * GET /api/recipes/status — поточний ліміт і преміум-статус користувача.
+ *
+ * Викликається при старті Mini App (до будь-яких дій) щоб одразу показати
+ * paywall, якщо денні ліміти вичерпані і преміуму немає.
+ * Лічильник НЕ списується.
+ */
+export async function getUserStatusHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const userId = req.telegramUser?.id ?? 0;
+    const rateLimit = await getLimitStatus(userId);
+    res.status(200).json(rateLimit);
+  } catch (error) {
+    next(error);
+  }
+}
+
 /** За замовчуванням — українська */
 const DEFAULT_LOCALE = 'uk';
 
@@ -71,7 +92,7 @@ export async function analyzeRecipesHandler(
 
     // Інформаційно повертаємо поточний стан ліміту (без списання)
     const userId = req.telegramUser?.id ?? 0;
-    const rateLimit = getLimitStatus(userId);
+    const rateLimit = await getLimitStatus(userId);
 
     res.status(200).json({ ingredients, rateLimit });
   } catch (error) {
@@ -112,7 +133,7 @@ export async function generateRecipesHandler(
     const userId = requireUserId(req);
 
     // ── Перевірка та списання ліміту ───────────────────────────────────────────
-    const limitResult = consumeToken(userId);
+    const limitResult = await consumeToken(userId);
 
     if (!limitResult.allowed) {
       // Ліміт вичерпано — повертаємо структуровану відповідь 429
@@ -135,6 +156,7 @@ export async function generateRecipesHandler(
       rateLimit: {
         remaining: limitResult.remaining,
         total: limitResult.total,
+        isPremium: limitResult.isPremium,
       },
     };
 
@@ -174,7 +196,7 @@ export async function translateRecipesHandler(
 
     // Повертаємо поточний стан ліміту (без зміни)
     const userId = req.telegramUser?.id ?? 0;
-    const rateLimit = getLimitStatus(userId);
+    const rateLimit = await getLimitStatus(userId);
 
     const response: AnalyzeRecipesResponse = { ...translated, rateLimit };
     res.status(200).json(response);
