@@ -12,6 +12,8 @@ import { LoadingProgress } from '@/components/LoadingProgress';
 import { PaywallModal } from '@/components/PaywallModal';
 import { PhotoUpload } from '@/components/PhotoUpload';
 import { RecipeResults } from '@/components/RecipeResults';
+import { ReferralBlock } from '@/components/ReferralBlock';
+import { claimReferral } from '@/services/referral.service';
 import { useI18n } from '@/i18n/I18nContext';
 import type { Locale, Translation } from '@/i18n/types';
 import '@/styles/App.css';
@@ -39,13 +41,43 @@ export function App() {
   /**
    * Перевірка лімітів при першому відкритті Mini App.
    * Якщо ліміт вичерпано і немає преміуму — paywall відкриється автоматично.
-   * Запускаємо тільки коли Telegram ініціалізація готова і користувач відомий
-   * (без initData запит все одно отримає 401 і тихо ігнорується).
+   * Запускаємо тільки коли Telegram ініціалізація готова і користувач відомий.
    */
   useEffect(() => {
     if (isReady && user) {
       void dispatch(fetchUserStatus());
     }
+  }, [isReady, user, dispatch]);
+
+  /**
+   * Реферальна система: якщо Mini App відкрито через реферальне посилання
+   * (start_param = "ref_<userId>") — зараховуємо бонус рефереру.
+   *
+   * useRef гарантує одноразовий виклик протягом сесії (навіть при
+   * Strict Mode подвійному монтуванні у dev). Після успішного зарахування
+   * оновлюємо лічильник спроб через fetchUserStatus.
+   */
+  const referralClaimedRef = useRef(false);
+  useEffect(() => {
+    if (!isReady || !user || referralClaimedRef.current) return;
+
+    const unsafeData = window.Telegram?.WebApp?.initDataUnsafe as
+      { user?: TelegramWebAppUser; start_param?: string } | undefined;
+    const startParam = unsafeData?.start_param;
+    if (!startParam?.startsWith('ref_')) return;
+
+    referralClaimedRef.current = true;
+
+    void claimReferral(startParam)
+      .then((result) => {
+        if (result.credited) {
+          // Оновлюємо лічильник — бонус вже зараховано рефереру
+          void dispatch(fetchUserStatus());
+        }
+      })
+      .catch(() => {
+        // Реферальний клейм некритичний — тихо ігноруємо
+      });
   }, [isReady, user, dispatch]);
 
   /**
@@ -120,14 +152,17 @@ export function App() {
               </div>
             )}
 
-            {/* Якщо ліміт вичерпано — заблокована зона завантаження */}
+            {/* Якщо ліміт вичерпано — заблокована зона завантаження + рефералка */}
             {isLimitExhausted ? (
-              <UploadBlockedCard
-                title={t('uploadBlockedTitle')}
-                body={t('uploadBlockedBody')}
-                upgradeLabel={t('paywallUpgradeBtn')}
-                onUpgrade={() => dispatch(openPaywall())}
-              />
+              <>
+                <UploadBlockedCard
+                  title={t('uploadBlockedTitle')}
+                  body={t('uploadBlockedBody')}
+                  upgradeLabel={t('paywallUpgradeBtn')}
+                  onUpgrade={() => dispatch(openPaywall())}
+                />
+                {user && <ReferralBlock userId={user.id} />}
+              </>
             ) : (
               <PhotoUpload disabled={!isReady} />
             )}

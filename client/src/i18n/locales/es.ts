@@ -69,6 +69,13 @@ export const es: Translation = {
 
   resetBtn: 'Subir nuevas fotos',
 
+  referralTitle: 'Invita a un amigo — obtén intentos',
+  referralDescription: 'Comparte tu enlace. Por cada amigo que se una, recibes <b>+{bonus} intentos</b> gratis.',
+  referralBonusHint: '+{bonus} intentos por amigo',
+  referralCopyBtn: 'Copiar enlace de invitación',
+  referralCopied: '¡Copiado! ✓',
+  referralOrDivider: 'o',
+
   langSelectTitle: 'Elige tu idioma',
   langSelectSubtitle: 'Puedes cambiarlo en cualquier momento',
 

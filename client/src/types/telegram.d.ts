@@ -32,6 +32,12 @@ interface TelegramWebApp {
   initData: string;
   initDataUnsafe: {
     user?: TelegramWebAppUser;
+    /**
+     * Параметр, переданий при відкритті Mini App через посилання
+     * виду https://t.me/bot/app?startapp=<value>.
+     * Використовується для реферальних посилань (ref_<userId>).
+     */
+    start_param?: string;
   };
   themeParams: Record<string, string | undefined>;
   colorScheme: 'light' | 'dark';

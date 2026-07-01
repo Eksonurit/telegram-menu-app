@@ -69,6 +69,13 @@ export const ru: Translation = {
 
   resetBtn: 'Загрузить новые фото',
 
+  referralTitle: 'Пригласи друга — получи попытки',
+  referralDescription: 'Поделись ссылкой. За каждого друга, который присоединится, ты получаешь <b>+{bonus} попытки</b> бесплатно.',
+  referralBonusHint: '+{bonus} попытки за друга',
+  referralCopyBtn: 'Скопировать ссылку',
+  referralCopied: 'Скопировано! ✓',
+  referralOrDivider: 'или',
+
   langSelectTitle: 'Выберите язык',
   langSelectSubtitle: 'Вы сможете изменить это в любое время',
 

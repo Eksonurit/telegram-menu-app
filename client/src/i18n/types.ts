@@ -117,6 +117,20 @@ export interface Translation {
   // --- Дії ---
   resetBtn: string;
 
+  // --- Реферальна система ---
+  /** Заголовок блоку рефералки */
+  referralTitle: string;
+  /** Опис бонусу. Плейсхолдер: {bonus} */
+  referralDescription: string;
+  /** Підказка поруч з посиланням */
+  referralBonusHint: string;
+  /** Кнопка копіювання посилання */
+  referralCopyBtn: string;
+  /** Стан кнопки після копіювання */
+  referralCopied: string;
+  /** Роздільник "або" між Paywall і рефералкою */
+  referralOrDivider: string;
+
   // --- Екран вибору мови ---
   langSelectTitle: string;
   langSelectSubtitle: string;

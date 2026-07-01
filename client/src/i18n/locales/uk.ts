@@ -69,6 +69,13 @@ export const uk: Translation = {
 
   resetBtn: 'Завантажити нові фото',
 
+  referralTitle: 'Запроси друга — отримай спроби',
+  referralDescription: 'Поділись посиланням. За кожного друга, що приєднається, ти отримуєш <b>+{bonus} спроби</b> безкоштовно.',
+  referralBonusHint: '+{bonus} спроби за друга',
+  referralCopyBtn: 'Скопіювати посилання',
+  referralCopied: 'Скопійовано! ✓',
+  referralOrDivider: 'або',
+
   langSelectTitle: 'Оберіть мову',
   langSelectSubtitle: 'Ви зможете змінити це будь-коли',
 

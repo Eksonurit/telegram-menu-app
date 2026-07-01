@@ -26,8 +26,8 @@ const PREMIUM_PAYLOAD_PREFIX = 'premium_upgrade_';
 /** Метадані товару «Преміум» */
 const PREMIUM_TITLE = 'Pic2Recipe Premium';
 const PREMIUM_DESCRIPTION =
-  'Unlock unlimited recipe generations and culinary secrets permanently';
-const PREMIUM_LABEL = 'Premium (unlimited)';
+  'Get +30 recipe generations valid for 30 days. Stack multiple purchases!';
+const PREMIUM_LABEL = '+30 recipe generations (30 days)';
 
 /**
  * Витягує Telegram ID з payload виду "premium_upgrade_<userId>".

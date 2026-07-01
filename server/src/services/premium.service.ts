@@ -1,53 +1,93 @@
 /**
  * premium.service.ts
  *
- * Сервіс зберігання преміум-статусу користувачів у PostgreSQL.
+ * Управління платними кредитами користувачів (таблиця user_credits).
  *
- * Преміум знімає денний ліміт генерацій НАЗАВЖДИ (одноразова покупка за Telegram Stars).
- * Статус зберігається в таблиці premium_users і ПЕРЕЖИВАЄ перезапуск сервера.
+ * БІЗНЕС-МОДЕЛЬ:
+ *  Після оплати 50 Telegram Stars → user отримує +30 спроб терміном 30 днів.
+ *  Якщо оплатити повторно до закінчення терміну — спроби та час ДОДАЮТЬСЯ
+ *  до наявних (стекуються).
  *
- * Наявність рядка з user_id = активний преміум. Так простіше й надійніше,
- * ніж зберігати булевий прапорець.
+ * "Преміум" у контексті цього сервісу означає: є paid_remaining > 0
+ * і paid_expires_at > NOW().
  */
 
 import { query } from '../db/pool.js';
 
+/** Кількість платних спроб за одну покупку */
+const PAID_CREDITS_PER_PURCHASE = 30;
+
+/** Термін дії платного пакету в днях */
+const PAID_CREDITS_TTL_DAYS = 30;
+
 /**
- * Перевіряє, чи є користувач преміум-підписником.
+ * Перевіряє, чи є у користувача активні платні спроби.
  *
  * @param userId — Telegram ID користувача
  */
 export async function isPremiumUser(userId: number): Promise<boolean> {
-  const result = await query(
-    'SELECT 1 FROM premium_users WHERE user_id = $1 LIMIT 1',
+  const result = await query<{ active: boolean }>(
+    `SELECT (paid_remaining > 0 AND paid_expires_at > NOW()) AS active
+     FROM user_credits
+     WHERE user_id = $1`,
     [userId],
   );
-  return (result.rowCount ?? 0) > 0;
+  if ((result.rowCount ?? 0) === 0) return false;
+  return result.rows[0].active;
 }
 
 /**
- * Надає користувачу преміум назавжди.
- * Викликається ВИКЛЮЧНО після підтвердженого успішного платежу (successful_payment).
- * Ідемпотентна: повторний виклик для того самого користувача безпечний
- * завдяки ON CONFLICT DO NOTHING.
+ * Нараховує +30 платних спроб на 30 днів після підтвердженої оплати.
+ *
+ * Логіка стекування (якщо користувач купує повторно до закінчення терміну):
+ *  - paid_remaining += 30
+ *  - paid_expires_at += 30 днів (від поточного закінчення, а не від сьогодні)
+ *
+ * Якщо попередній пакет уже протух:
+ *  - paid_remaining = 30 (з нуля, не додаємо до нуля-протуху)
+ *  - paid_expires_at = NOW() + 30 днів
  *
  * @param userId — Telegram ID користувача, який оплатив
  */
 export async function grantPremium(userId: number): Promise<void> {
   await query(
-    `INSERT INTO premium_users (user_id)
-     VALUES ($1)
-     ON CONFLICT (user_id) DO NOTHING`,
-    [userId],
+    `INSERT INTO user_credits (user_id, paid_remaining, paid_expires_at)
+     VALUES ($1, $2, NOW() + ($3 || ' days')::INTERVAL)
+     ON CONFLICT (user_id) DO UPDATE
+       SET paid_remaining  = CASE
+             -- Попередній пакет ще активний → додаємо зверху
+             WHEN user_credits.paid_expires_at IS NOT NULL
+               AND user_credits.paid_expires_at > NOW()
+             THEN user_credits.paid_remaining + $2
+             -- Протух або ніколи не купував → починаємо з нуля
+             ELSE $2
+           END,
+           paid_expires_at = CASE
+             -- Продовжуємо від поточного закінчення (стекування часу)
+             WHEN user_credits.paid_expires_at IS NOT NULL
+               AND user_credits.paid_expires_at > NOW()
+             THEN user_credits.paid_expires_at + ($3 || ' days')::INTERVAL
+             -- Новий пакет від сьогодні
+             ELSE NOW() + ($3 || ' days')::INTERVAL
+           END`,
+    [userId, PAID_CREDITS_PER_PURCHASE, PAID_CREDITS_TTL_DAYS],
   );
-  console.log(`[premium] Користувачу ${userId} надано преміум-доступ (збережено в БД)`);
+
+  console.log(
+    `[premium] Користувачу ${userId} нараховано ` +
+    `+${PAID_CREDITS_PER_PURCHASE} платних спроб на ${PAID_CREDITS_TTL_DAYS} днів`,
+  );
 }
 
 /**
- * Знімає преміум (адмін-утиліта / для тестів). У звичайному флоу не використовується.
- *
- * @param userId — Telegram ID користувача
+ * Відкликає платний статус (адмін / тести).
+ * У штатному флоу не використовується.
  */
 export async function revokePremium(userId: number): Promise<void> {
-  await query('DELETE FROM premium_users WHERE user_id = $1', [userId]);
+  await query(
+    `UPDATE user_credits
+     SET paid_remaining = 0, paid_expires_at = NULL
+     WHERE user_id = $1`,
+    [userId],
+  );
 }

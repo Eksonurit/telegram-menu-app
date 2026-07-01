@@ -85,6 +85,36 @@ async function callBotApi<T>(
   return body.result;
 }
 
+/**
+ * Надсилає текстове повідомлення користувачу через бота.
+ * Використовується для реферальних сповіщень.
+ *
+ * Помилки проковтуються (warn-рівень) — сповіщення некритичне,
+ * його недоставлення не повинно ламати основний флоу.
+ *
+ * @param botToken — токен бота
+ * @param chatId   — Telegram ID отримувача
+ * @param text     — HTML-текст повідомлення
+ */
+export async function sendMessage(
+  botToken: string,
+  chatId: number,
+  text: string,
+): Promise<void> {
+  try {
+    await callBotApi<unknown>(botToken, 'sendMessage', {
+      chat_id: chatId,
+      text,
+      parse_mode: 'HTML',
+    });
+  } catch (error) {
+    console.warn(
+      `[telegram.service] Не вдалося надіслати сповіщення користувачу ${chatId}:`,
+      error,
+    );
+  }
+}
+
 /** Параметри для створення інвойс-посилання на преміум */
 export interface CreateInvoiceParams {
   botToken: string;

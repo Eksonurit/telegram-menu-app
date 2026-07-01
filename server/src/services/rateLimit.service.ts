@@ -1,146 +1,171 @@
 /**
  * rateLimit.service.ts
  *
- * Сервіс обмеження щоденних безкоштовних генерацій рецептів (зберігання — PostgreSQL).
+ * Сервіс обліку спроб генерацій рецептів (таблиця user_credits у PostgreSQL).
  *
- * Ліміт кожного користувача скидається через 24 години після ПЕРШОГО його запиту
- * за поточне вікно. Дані зберігаються в таблиці rate_limits і ПЕРЕЖИВАЮТЬ
- * перезапуск сервера.
+ * БІЗНЕС-МОДЕЛЬ:
+ *  - Кожен новий користувач отримує 3 БЕЗКОШТОВНІ спроби (free_remaining).
+ *    Вони не поновлюються — витрачені назавжди.
+ *  - Коли безкоштовні та платні спроби закінчились → показуємо Paywall.
+ *  - Після оплати 50 Stars → нараховуємо +30 ПЛАТНИХ спроб (paid_remaining)
+ *    терміном дії 30 днів (paid_expires_at).
  *
- * ПРЕМІУМ: користувачі з активним преміумом (isPremiumUser) обходять ліміт
- * повністю — для них кожна генерація завжди дозволена, лічильник не чіпається.
+ * ПОРЯДОК СПИСАННЯ: спочатку платні (якщо активні), потім безкоштовні.
  *
- * АТОМАРНІСТЬ: списання токена виконується в транзакції з SELECT ... FOR UPDATE,
- * тож паралельні запити того самого користувача не «прослизнуть» повз ліміт.
+ * АТОМАРНІСТЬ: consumeToken виконується в транзакції з SELECT ... FOR UPDATE,
+ * тому паралельні запити одного користувача не «прослизнуть» повз ліміт.
  */
 
 import { getPool, query } from '../db/pool.js';
-import { isPremiumUser } from './premium.service.js';
 
-/** Тривалість одного вікна — 24 години (у мілісекундах) */
-const TTL_MS = 24 * 60 * 60 * 1000;
-
-/** Рядок таблиці rate_limits (reset_at парситься в number у pool.ts) */
-interface RateLimitRow {
-  remaining: number;
-  reset_at: number;
+/** Рядок таблиці user_credits */
+interface UserCreditsRow {
+  free_remaining:  number;
+  paid_remaining:  number;
+  paid_expires_at: Date | null;
 }
 
-/** Денний ліміт безкоштовних генерацій (зчитується з env або дефолт 3) */
-function getDailyLimit(): number {
+/** Кількість безкоштовних спроб для нового користувача (env або дефолт 3) */
+function getFreeLimit(): number {
   const raw = process.env.DAILY_FREE_LIMIT;
   const parsed = raw ? Number(raw) : NaN;
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 3;
 }
 
+/** Чи є у рядка активні платні спроби (не протухлі і більше нуля) */
+function isPaidActive(row: UserCreditsRow): boolean {
+  return (
+    row.paid_remaining > 0 &&
+    row.paid_expires_at !== null &&
+    row.paid_expires_at > new Date()
+  );
+}
+
 // ─── Публічний API ─────────────────────────────────────────────────────────────
 
 /**
- * Повертає поточний стан ліміту для користувача БЕЗ зміни лічильника.
- * Використовується для інформаційного відображення у відповідях безкоштовних запитів.
- *
- * Для преміум-користувачів повертає isPremium=true, а remaining дорівнює total
- * (UI трактує це як «безліміт»).
+ * Повертає поточний стан кредитів БЕЗ зміни лічильника.
+ * Використовується для відображення у відповідях безкоштовних запитів
+ * та при старті Mini App (GET /api/recipes/status).
  */
 export async function getLimitStatus(userId: number): Promise<{
-  remaining: number;
-  total: number;
-  isPremium: boolean;
+  remaining:  number;
+  total:      number;
+  isPremium:  boolean;
 }> {
-  const total = getDailyLimit();
+  const freeLimit = getFreeLimit();
 
-  // Преміум — ліміт не діє
-  if (await isPremiumUser(userId)) {
-    return { remaining: total, total, isPremium: true };
-  }
-
-  const now = Date.now();
-  const result = await query<RateLimitRow>(
-    'SELECT remaining, reset_at FROM rate_limits WHERE user_id = $1',
+  const result = await query<UserCreditsRow>(
+    `SELECT free_remaining, paid_remaining, paid_expires_at
+     FROM user_credits
+     WHERE user_id = $1`,
     [userId],
   );
 
-  const entry = result.rows[0];
+  const row = result.rows[0];
 
-  // Якщо запису немає або вікно вже закрилось — повний ліміт
-  if (!entry || now >= entry.reset_at) {
-    return { remaining: total, total, isPremium: false };
+  // Новий користувач — запису ще немає, повертаємо дефолт
+  if (!row) {
+    return { remaining: freeLimit, total: freeLimit, isPremium: false };
   }
 
-  return { remaining: entry.remaining, total, isPremium: false };
+  const paidActive = isPaidActive(row);
+  const remaining  = row.free_remaining + (paidActive ? row.paid_remaining : 0);
+
+  return { remaining, total: freeLimit, isPremium: paidActive };
 }
 
 /**
- * Перевіряє, чи є доступна спроба, і якщо так — атомарно списує одну.
+ * Атомарно перевіряє наявність спроби і списує одну, якщо вона є.
  *
- * @returns allowed   — чи дозволено виконати генерацію
+ * Порядок:
+ *  1. Якщо є активні платні → списуємо paid_remaining.
+ *  2. Інакше, якщо є безкоштовні → списуємо free_remaining.
+ *  3. Якщо нічого немає → повертаємо allowed: false.
+ *
+ * @returns allowed   — чи дозволено генерацію
  * @returns remaining — скільки спроб залишилось ПІСЛЯ цього виклику
- * @returns total     — максимум спроб на добу
- * @returns isPremium — чи користувач преміум (тоді ліміт не діє)
+ * @returns total     — базовий ліміт безкоштовних спроб
+ * @returns isPremium — чи є активні платні спроби після списання
  */
 export async function consumeToken(userId: number): Promise<{
-  allowed: boolean;
+  allowed:   boolean;
   remaining: number;
-  total: number;
+  total:     number;
   isPremium: boolean;
 }> {
-  const total = getDailyLimit();
-
-  // Преміум — генерація завжди дозволена, лічильник не чіпаємо
-  if (await isPremiumUser(userId)) {
-    return { allowed: true, remaining: total, total, isPremium: true };
-  }
-
-  const now = Date.now();
+  const freeLimit = getFreeLimit();
   const client = await getPool().connect();
 
   try {
     await client.query('BEGIN');
 
-    // Блокуємо рядок користувача на час транзакції (захист від гонок)
-    const selectResult = await client.query<RateLimitRow>(
-      'SELECT remaining, reset_at FROM rate_limits WHERE user_id = $1 FOR UPDATE',
+    // Гарантуємо існування рядка для нового користувача
+    await client.query(
+      `INSERT INTO user_credits (user_id, free_remaining)
+       VALUES ($1, $2)
+       ON CONFLICT (user_id) DO NOTHING`,
+      [userId, freeLimit],
+    );
+
+    // Блокуємо рядок на час транзакції (захист від паралельних запитів)
+    const selectResult = await client.query<UserCreditsRow>(
+      `SELECT free_remaining, paid_remaining, paid_expires_at
+       FROM user_credits
+       WHERE user_id = $1
+       FOR UPDATE`,
       [userId],
     );
-    const entry = selectResult.rows[0];
+    const row = selectResult.rows[0];
 
-    // Випадок 1: запису немає або вікно скинулось → нове вікно, одразу списуємо 1
-    if (!entry || now >= entry.reset_at) {
-      const remaining = total - 1;
-      const resetAt = now + TTL_MS;
+    // Перевіряємо активність платних спроб
+    const paidActive = isPaidActive(row);
 
+    // Якщо платні протухли — обнуляємо їх (housekeeping)
+    if (!paidActive && row.paid_remaining > 0) {
       await client.query(
-        `INSERT INTO rate_limits (user_id, remaining, reset_at)
-         VALUES ($1, $2, $3)
-         ON CONFLICT (user_id)
-         DO UPDATE SET remaining = EXCLUDED.remaining, reset_at = EXCLUDED.reset_at`,
-        [userId, remaining, resetAt],
+        `UPDATE user_credits
+         SET paid_remaining = 0, paid_expires_at = NULL
+         WHERE user_id = $1`,
+        [userId],
       );
-
-      await client.query('COMMIT');
-      return { allowed: true, remaining, total, isPremium: false };
+      row.paid_remaining = 0;
+      row.paid_expires_at = null;
     }
 
-    // Випадок 2: вікно активне, але спроби вичерпано
-    if (entry.remaining <= 0) {
+    // ── Кейс 1: є активні платні — списуємо paid першим ──────────────────
+    if (paidActive) {
+      const newPaid = row.paid_remaining - 1;
+      await client.query(
+        `UPDATE user_credits SET paid_remaining = $2 WHERE user_id = $1`,
+        [userId, newPaid],
+      );
       await client.query('COMMIT');
-      return { allowed: false, remaining: 0, total, isPremium: false };
+
+      const remaining  = row.free_remaining + newPaid;
+      const isPremium  = newPaid > 0; // преміум активний поки є платні
+      return { allowed: true, remaining, total: freeLimit, isPremium };
     }
 
-    // Випадок 3: вікно активне, є спроби → списуємо одну
-    const remaining = entry.remaining - 1;
-    await client.query(
-      'UPDATE rate_limits SET remaining = $2 WHERE user_id = $1',
-      [userId, remaining],
-    );
+    // ── Кейс 2: платних немає, є безкоштовні — списуємо free ─────────────
+    if (row.free_remaining > 0) {
+      const newFree = row.free_remaining - 1;
+      await client.query(
+        `UPDATE user_credits SET free_remaining = $2 WHERE user_id = $1`,
+        [userId, newFree],
+      );
+      await client.query('COMMIT');
+      return { allowed: true, remaining: newFree, total: freeLimit, isPremium: false };
+    }
 
+    // ── Кейс 3: нічого немає — генерація заблокована ─────────────────────
     await client.query('COMMIT');
-    return { allowed: true, remaining, total, isPremium: false };
+    return { allowed: false, remaining: 0, total: freeLimit, isPremium: false };
+
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
   } finally {
-    // ОБОВ'ЯЗКОВО повертаємо з'єднання в пул
     client.release();
   }
 }

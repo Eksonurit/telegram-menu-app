@@ -26,6 +26,18 @@ pg.types.setTypeParser(20, (value) => Number(value));
 
 let _pool: pg.Pool | null = null;
 
+/** Чи потрібен SSL для підключення до PostgreSQL */
+function shouldUseSsl(connectionString: string): boolean {
+  const explicit = process.env.DATABASE_SSL;
+  if (explicit === 'true') return true;
+  if (explicit === 'false') return false;
+
+  // Railway / інші хмарні провайдери зазвичай вимагають SSL
+  return /sslmode=require|railway\.app|neon\.tech|supabase\.co|render\.com/i.test(
+    connectionString,
+  );
+}
+
 /**
  * Повертає (та за потреби створює) глобальний пул з'єднань.
  * Кидає зрозумілу помилку, якщо DATABASE_URL відсутній.
@@ -45,12 +57,10 @@ export function getPool(): pg.Pool {
 
   _pool = new Pool({
     connectionString,
-    // Деякі хмарні БД (Neon, Supabase, Heroku) вимагають SSL.
-    // Вмикається через DATABASE_SSL=true; для локального Postgres не потрібно.
-    ssl:
-      process.env.DATABASE_SSL === 'true'
-        ? { rejectUnauthorized: false }
-        : undefined,
+    // SSL: явно DATABASE_SSL=true, або автоматично для хмарних URL (Railway, Neon, Supabase)
+    ssl: shouldUseSsl(connectionString)
+      ? { rejectUnauthorized: false }
+      : undefined,
   });
 
   // Не валимо процес при фоновій помилці idle-з'єднання — лише логуємо.

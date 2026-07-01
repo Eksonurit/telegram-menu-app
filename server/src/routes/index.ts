@@ -3,6 +3,7 @@ import type { ServerConfig } from '../config/env.config.js';
 import { healthRouter } from './health.routes.js';
 import { createPaymentsRouter } from './payments.routes.js';
 import { createRecipesRouter } from './recipes.routes.js';
+import { createReferralRouter } from './referral.routes.js';
 
 export function createApiRouter(config: ServerConfig): Router {
   const router = Router();
@@ -10,6 +11,7 @@ export function createApiRouter(config: ServerConfig): Router {
   router.use(healthRouter);
   router.use('/recipes', createRecipesRouter(config));
   router.use('/payments', createPaymentsRouter(config));
+  router.use('/referral', createReferralRouter(config));
 
   return router;
 }

@@ -13,19 +13,29 @@ import { getPool } from './pool.js';
 
 /** SQL створення таблиць (idempotent — безпечно виконувати повторно) */
 const SCHEMA_SQL = `
-  -- Преміум-користувачі: наявність рядка = активний довічний преміум
-  CREATE TABLE IF NOT EXISTS premium_users (
-    user_id    BIGINT PRIMARY KEY,
-    granted_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  -- Єдина таблиця кредитів: безкоштовні + платні спроби.
+  --
+  -- free_remaining  — 3 безкоштовні спроби при реєстрації, лише зменшуються.
+  -- paid_remaining  — нараховуються після оплати (+30 за 50 Stars).
+  -- paid_expires_at — дата закінчення дії платних спроб (30 днів з дня оплати).
+  --
+  -- Логіка споживання: спочатку списуємо paid (якщо активні), потім free.
+  -- При вичерпанні обох — генерація заблокована, пропонуємо купити пакет.
+  CREATE TABLE IF NOT EXISTS user_credits (
+    user_id          BIGINT      PRIMARY KEY,
+    free_remaining   INT         NOT NULL DEFAULT 3,
+    paid_remaining   INT         NOT NULL DEFAULT 0,
+    paid_expires_at  TIMESTAMPTZ
   );
 
-  -- Денні ліміти безкоштовних генерацій
-  CREATE TABLE IF NOT EXISTS rate_limits (
-    user_id   BIGINT PRIMARY KEY,
-    -- Скільки генерацій залишилось у поточному 24-год вікні
-    remaining INTEGER NOT NULL,
-    -- Момент скидання вікна (Unix epoch у мілісекундах)
-    reset_at  BIGINT NOT NULL
+  -- Реферальні події: хто кого запросив.
+  -- UNIQUE(referee_id) гарантує, що новий користувач може зарахувати бонус
+  -- рефереру лише ОДИН РАЗ — навіть при повторних відкриттях посилання.
+  CREATE TABLE IF NOT EXISTS referral_events (
+    id          SERIAL      PRIMARY KEY,
+    referrer_id BIGINT      NOT NULL,
+    referee_id  BIGINT      NOT NULL UNIQUE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
 `;
 
@@ -42,5 +52,5 @@ export async function initDatabase(): Promise<void> {
 
   await pool.query(SCHEMA_SQL);
 
-  console.log('[db] Схему бази даних ініціалізовано (premium_users, rate_limits)');
+  console.log('[db] Схему бази даних ініціалізовано (user_credits, referral_events)');
 }

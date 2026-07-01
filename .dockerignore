@@ -1,0 +1,14 @@
+node_modules
+**/node_modules
+**/dist
+.git
+.gitignore
+.cursor
+.cursorrules
+**/.env
+**/.env.*
+!.env.docker.example
+*.md
+terminals
+assets
+agent-transcripts
