@@ -117,6 +117,12 @@ export async function consumeToken(userId: number): Promise<{
       [userId],
     );
     const row = selectResult.rows[0];
+    if (!row) {
+      await client.query('ROLLBACK');
+      throw new Error(
+        `[rateLimit] Рядок user_credits не знайдено для userId=${userId}`,
+      );
+    }
 
     // Перевіряємо активність платних спроб
     const paidActive = isPaidActive(row);

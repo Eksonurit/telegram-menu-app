@@ -33,7 +33,9 @@ export async function isPremiumUser(userId: number): Promise<boolean> {
     [userId],
   );
   if ((result.rowCount ?? 0) === 0) return false;
-  return result.rows[0].active;
+  const row = result.rows[0];
+  if (!row) return false;
+  return row.active;
 }
 
 /**
