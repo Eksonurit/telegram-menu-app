@@ -11,7 +11,34 @@ import { notFoundHandler } from './middleware/notFound.middleware.js';
 export function createApp(config: ServerConfig): express.Application {
   const app = express();
 
-  app.use(helmet());
+  // ── Helmet + CSP для Telegram Mini App ────────────────────────────────────
+  //
+  // Дефолтний helmet() блокує:
+  //  • https://telegram.org/js/telegram-web-app.js  → немає initData, «поза Telegram»
+  //  • blob: URL прев’ю фото                          → зламані прев’ю
+  //  • https://flagcdn.com                          → зламані прапори мов
+  //
+  // На Vite dev (5173) CSP немає — тому локально через ngrok:5173 все працювало,
+  // а через Express/Railway (порт 3000) — ні.
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", 'https://telegram.org'],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:', 'blob:', 'https://flagcdn.com'],
+          connectSrc: ["'self'"],
+          fontSrc: ["'self'"],
+          objectSrc: ["'none'"],
+          frameSrc: ["'self'", 'https://telegram.org', 'https://*.telegram.org'],
+          upgradeInsecureRequests: [],
+        },
+      },
+      // Telegram WebView інколи конфліктує з COEP
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
   app.use(
     cors({
       origin: config.corsOrigin,
