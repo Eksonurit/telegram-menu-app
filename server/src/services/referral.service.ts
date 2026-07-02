@@ -79,8 +79,8 @@ export async function claimReferral(
       `INSERT INTO user_credits (user_id, free_remaining)
        VALUES ($1, $2)
        ON CONFLICT (user_id) DO UPDATE
-         SET free_remaining = user_credits.free_remaining + $2`,
-      [referrerId, REFERRAL_BONUS],
+         SET free_remaining = user_credits.free_remaining + $3`,
+      [referrerId, freeLimit + REFERRAL_BONUS, REFERRAL_BONUS],
     );
 
     await client.query('COMMIT');

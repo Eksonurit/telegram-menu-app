@@ -14,6 +14,7 @@ import { PhotoUpload } from '@/components/PhotoUpload';
 import { RecipeResults } from '@/components/RecipeResults';
 import { ReferralBlock } from '@/components/ReferralBlock';
 import { claimReferral } from '@/services/referral.service';
+import { getReferralCodeFromStartParam } from '@/utils/referral.utils';
 import { useI18n } from '@/i18n/I18nContext';
 import type { Locale, Translation } from '@/i18n/types';
 import '@/styles/App.css';
@@ -57,26 +58,30 @@ export function App() {
    * Strict Mode подвійному монтуванні у dev). Після успішного зарахування
    * оновлюємо лічильник спроб через fetchUserStatus.
    */
-  const referralClaimedRef = useRef(false);
+  const referralClaimInFlightRef = useRef(false);
   useEffect(() => {
-    if (!isReady || !user || referralClaimedRef.current) return;
+    if (!isReady || !user || referralClaimInFlightRef.current) return;
 
-    const unsafeData = window.Telegram?.WebApp?.initDataUnsafe as
-      { user?: TelegramWebAppUser; start_param?: string } | undefined;
-    const startParam = unsafeData?.start_param;
-    if (!startParam?.startsWith('ref_')) return;
+    const referralCode = getReferralCodeFromStartParam();
+    if (!referralCode) return;
 
-    referralClaimedRef.current = true;
+    const storageKey = `referral_claim_${user.id}_${referralCode}`;
+    if (sessionStorage.getItem(storageKey)) return;
 
-    void claimReferral(startParam)
+    referralClaimInFlightRef.current = true;
+
+    void claimReferral(referralCode)
       .then((result) => {
+        sessionStorage.setItem(storageKey, result.credited ? 'credited' : 'skipped');
         if (result.credited) {
-          // Оновлюємо лічильник — бонус вже зараховано рефереру
           void dispatch(fetchUserStatus());
         }
       })
       .catch(() => {
-        // Реферальний клейм некритичний — тихо ігноруємо
+        // Некритично — дозволяємо повтор при наступному відкритті
+      })
+      .finally(() => {
+        referralClaimInFlightRef.current = false;
       });
   }, [isReady, user, dispatch]);
 

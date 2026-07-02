@@ -6,6 +6,8 @@ export interface ServerConfig {
     botToken: string;
     botUsername: string;
     miniAppUrl: string;
+    /** Коротке ім'я Direct Link Mini App з BotFather (/newapp), якщо є */
+    miniAppShortName: string;
     /**
      * Секрет вебхука Telegram. Якщо заданий, він має збігатися із заголовком
      * X-Telegram-Bot-Api-Secret-Token у вхідних оновленнях (захист ендпоінта).
@@ -80,6 +82,7 @@ export function loadConfig(): ServerConfig {
       botToken: getEnv('TELEGRAM_BOT_TOKEN'),
       botUsername: getEnv('TELEGRAM_BOT_USERNAME'),
       miniAppUrl: getEnv('TELEGRAM_MINI_APP_URL'),
+      miniAppShortName: getEnv('TELEGRAM_MINI_APP_SHORT_NAME'),
       webhookSecret: getEnv('TELEGRAM_WEBHOOK_SECRET'),
     },
     payments: {

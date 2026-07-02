@@ -4,21 +4,21 @@
  * Блок із реферальним посиланням — показується на екрані вичерпаних лімітів.
  * Дозволяє скопіювати унікальне посилання одним дотиком.
  *
- * Посилання: https://t.me/<BOT_USERNAME>/app?startapp=ref_<userId>
- * Коли друг переходить за цим посиланням — рефереру нараховується +2 спроби.
+ * Посилання: https://t.me/<BOT>?startapp=ref_<userId>
+ * (або t.me/bot/shortname?startapp=..., якщо задано TELEGRAM_MINI_APP_SHORT_NAME)
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { appConfig } from '@/config/app.config';
 import { useI18n } from '@/i18n/I18nContext';
+import { fetchPublicAppConfig } from '@/services/public-config.service';
+import { buildReferralLink } from '@/utils/referral.utils';
 import '@/styles/ReferralBlock.css';
 
 interface ReferralBlockProps {
   /** Telegram ID поточного користувача */
   userId: number;
 }
-
-/** Ім'я бота береться з env (VITE_TELEGRAM_BOT_USERNAME) */
-const BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME as string | undefined;
 
 /** Кількість секунд показу стану "Скопійовано" */
 const COPIED_FEEDBACK_MS = 2000;
@@ -29,9 +29,29 @@ const REFERRAL_BONUS = 2;
 export function ReferralBlock({ userId }: ReferralBlockProps) {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
+  const [botUsername, setBotUsername] = useState(appConfig.botUsername);
+  const [miniAppShortName, setMiniAppShortName] = useState<string | undefined>();
 
-  const referralLink = BOT_USERNAME
-    ? `https://t.me/${BOT_USERNAME}/app?startapp=ref_${userId}`
+  useEffect(() => {
+    let cancelled = false;
+
+    void fetchPublicAppConfig()
+      .then((config) => {
+        if (cancelled) return;
+        if (config.botUsername) setBotUsername(config.botUsername);
+        if (config.miniAppShortName) setMiniAppShortName(config.miniAppShortName);
+      })
+      .catch(() => {
+        // Якщо API недоступний — лишаємо значення з Vite env (якщо були)
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const referralLink = botUsername
+    ? buildReferralLink(userId, botUsername, miniAppShortName)
     : null;
 
   const handleCopy = async () => {
@@ -53,34 +73,28 @@ export function ReferralBlock({ userId }: ReferralBlockProps) {
     setTimeout(() => setCopied(false), COPIED_FEEDBACK_MS);
   };
 
-  // Без username бота блок не показуємо — посилання буде неправильним
-  if (!BOT_USERNAME) return null;
+  if (!referralLink) return null;
 
   return (
     <div className="referral-block">
-      {/* Роздільник */}
       <div className="referral-block__divider">
         <span>{t('referralOrDivider')}</span>
       </div>
 
-      {/* Іконка */}
       <div className="referral-block__icon" aria-hidden="true">
         <FriendsIcon />
       </div>
 
-      {/* Заголовок та опис */}
       <h3 className="referral-block__title">{t('referralTitle')}</h3>
       <p
         className="referral-block__description"
-        /* t() повертає рядок, тому HTML-теги безпечно вставляємо через dangerouslySetInnerHTML */
         dangerouslySetInnerHTML={{
           __html: t('referralDescription', { bonus: String(REFERRAL_BONUS) }),
         }}
       />
 
-      {/* Посилання + кнопка */}
       <div className="referral-block__link-row">
-        <span className="referral-block__link-text" title={referralLink ?? ''}>
+        <span className="referral-block__link-text" title={referralLink}>
           {referralLink}
         </span>
         <button
@@ -94,15 +108,12 @@ export function ReferralBlock({ userId }: ReferralBlockProps) {
         </button>
       </div>
 
-      {/* Бонусна підказка */}
       <p className="referral-block__hint">
         {t('referralBonusHint', { bonus: String(REFERRAL_BONUS) })}
       </p>
     </div>
   );
 }
-
-// ─── Іконки ───────────────────────────────────────────────────────────────────
 
 function FriendsIcon() {
   return (

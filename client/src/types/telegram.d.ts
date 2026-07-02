@@ -34,7 +34,7 @@ interface TelegramWebApp {
     user?: TelegramWebAppUser;
     /**
      * Параметр, переданий при відкритті Mini App через посилання
-     * виду https://t.me/bot/app?startapp=<value>.
+     * виду https://t.me/bot?startapp=<value> або t.me/bot/appname?startapp=<value>.
      * Використовується для реферальних посилань (ref_<userId>).
      */
     start_param?: string;
