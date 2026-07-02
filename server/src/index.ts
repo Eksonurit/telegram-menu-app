@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { createApp } from './app.js';
 import { loadConfig, validateProductionConfig } from './config/env.config.js';
 import { initDatabase } from './db/schema.js';
+import { initBotInfo } from './services/telegram.service.js';
 
 /**
  * Точка входу: спершу ініціалізуємо БД (створюємо таблиці + перевіряємо з'єднання),
@@ -13,6 +14,8 @@ async function bootstrap(): Promise<void> {
   validateProductionConfig(config);
 
   await initDatabase();
+
+  await initBotInfo(config.telegram.botToken);
 
   const app = createApp(config);
 

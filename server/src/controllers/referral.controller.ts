@@ -13,11 +13,49 @@
 import type { NextFunction, Request, Response } from 'express';
 import type { ServerConfig } from '../config/env.config.js';
 import { claimReferral } from '../services/referral.service.js';
-import { sendMessage } from '../services/telegram.service.js';
+import { getBotUsernameFromApi, sendMessage } from '../services/telegram.service.js';
+import { buildReferralLink } from '../utils/referral-link.utils.js';
 import { HttpError } from '../utils/HttpError.js';
 
 /** Префікс реферального коду в start_param */
 const REFERRAL_PREFIX = 'ref_';
+
+function resolveBotUsername(config: ServerConfig): string {
+  const fromApi = getBotUsernameFromApi();
+  if (fromApi) return fromApi;
+
+  const fromEnv = config.telegram.botUsername.replace(/^@/, '').trim();
+  if (!fromEnv) {
+    throw new HttpError('Username Telegram-бота не налаштовано', 500);
+  }
+
+  return fromEnv;
+}
+
+/**
+ * GET /api/referral/link
+ * Повертає реферальне посилання для поточного користувача.
+ * Username береться з getMe — не залежить від помилок у env.
+ */
+export function getReferralLinkHandler(config: ServerConfig) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const referrerId = req.telegramUser?.id;
+      if (!referrerId) {
+        throw new HttpError("Авторизація через Telegram обов'язкова.", 401);
+      }
+
+      const botUsername = resolveBotUsername(config);
+      // Завжди головний Mini App (?startapp=) — найстабільніший формат.
+      // Direct Link (/shortname) ламається, якщо short name не створено в BotFather.
+      const link = buildReferralLink(referrerId, botUsername);
+
+      res.status(200).json({ link, botUsername });
+    } catch (error) {
+      next(error);
+    }
+  };
+}
 
 /**
  * POST /api/referral/claim

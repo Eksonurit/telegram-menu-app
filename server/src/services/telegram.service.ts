@@ -17,6 +17,15 @@ import { HttpError } from '../utils/HttpError.js';
 /** Базовий шаблон URL Bot API */
 const TELEGRAM_API_BASE = 'https://api.telegram.org';
 
+/** Кешовані дані бота з getMe (username завжди актуальний для t.me-посилань) */
+interface CachedBotInfo {
+  id: number;
+  username: string;
+  first_name: string;
+}
+
+let cachedBotInfo: CachedBotInfo | null = null;
+
 /** Валюта Telegram Stars */
 const STARS_CURRENCY = 'XTR';
 
@@ -83,6 +92,53 @@ async function callBotApi<T>(
   }
 
   return body.result;
+}
+
+/**
+ * Завантажує username бота через getMe і кешує результат.
+ * Джерело правди для реферальних посилань — env може бути застарілим або з помилкою.
+ */
+export async function initBotInfo(botToken: string): Promise<void> {
+  if (!botToken) {
+    console.warn('[telegram] TELEGRAM_BOT_TOKEN не задано — username бота невідомий');
+    return;
+  }
+
+  try {
+    const me = await callBotApi<{ id: number; username?: string; first_name: string }>(
+      botToken,
+      'getMe',
+      {},
+    );
+
+    if (!me.username) {
+      console.warn('[telegram] getMe не повернув username');
+      return;
+    }
+
+    cachedBotInfo = {
+      id: me.id,
+      username: me.username,
+      first_name: me.first_name,
+    };
+
+    const envUsername = process.env.TELEGRAM_BOT_USERNAME?.replace(/^@/, '').trim();
+    if (envUsername && envUsername.toLowerCase() !== me.username.toLowerCase()) {
+      console.warn(
+        `[telegram] TELEGRAM_BOT_USERNAME="${envUsername}" не збігається з getMe ` +
+          `"${me.username}". Для посилань використовується getMe.`,
+      );
+    }
+
+    console.log(`[telegram] Бот: @${me.username} (${me.first_name})`);
+  } catch (error) {
+    console.warn('[telegram] getMe не вдався — fallback на TELEGRAM_BOT_USERNAME з env:', error);
+  }
+}
+
+/** Username з getMe або порожній рядок, якщо initBotInfo ще не викликано */
+export function getBotUsernameFromApi(): string {
+  return cachedBotInfo?.username ?? '';
 }
 
 /**

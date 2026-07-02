@@ -2,21 +2,16 @@
  * ReferralBlock.tsx
  *
  * Блок із реферальним посиланням — показується на екрані вичерпаних лімітів.
- * Дозволяє скопіювати унікальне посилання одним дотиком.
- *
- * Посилання: https://t.me/<BOT>?startapp=ref_<userId>
- * (або t.me/bot/shortname?startapp=..., якщо задано TELEGRAM_MINI_APP_SHORT_NAME)
+ * Посилання генерується на сервері (username з Telegram getMe).
  */
 
 import { useEffect, useState } from 'react';
-import { appConfig } from '@/config/app.config';
 import { useI18n } from '@/i18n/I18nContext';
-import { fetchPublicAppConfig } from '@/services/public-config.service';
-import { buildReferralLink } from '@/utils/referral.utils';
+import { fetchReferralLink } from '@/services/referral.service';
 import '@/styles/ReferralBlock.css';
 
 interface ReferralBlockProps {
-  /** Telegram ID поточного користувача */
+  /** Telegram ID поточного користувача (для ключа перезавантаження) */
   userId: number;
 }
 
@@ -29,30 +24,26 @@ const REFERRAL_BONUS = 2;
 export function ReferralBlock({ userId }: ReferralBlockProps) {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
-  const [botUsername, setBotUsername] = useState(appConfig.botUsername);
-  const [miniAppShortName, setMiniAppShortName] = useState<string | undefined>();
+  const [referralLink, setReferralLink] = useState<string | null>(null);
+  const [linkError, setLinkError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    setReferralLink(null);
+    setLinkError(false);
 
-    void fetchPublicAppConfig()
-      .then((config) => {
-        if (cancelled) return;
-        if (config.botUsername) setBotUsername(config.botUsername);
-        if (config.miniAppShortName) setMiniAppShortName(config.miniAppShortName);
+    void fetchReferralLink()
+      .then((result) => {
+        if (!cancelled) setReferralLink(result.link);
       })
       .catch(() => {
-        // Якщо API недоступний — лишаємо значення з Vite env (якщо були)
+        if (!cancelled) setLinkError(true);
       });
 
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  const referralLink = botUsername
-    ? buildReferralLink(userId, botUsername, miniAppShortName)
-    : null;
+  }, [userId]);
 
   const handleCopy = async () => {
     if (!referralLink) return;
@@ -60,7 +51,6 @@ export function ReferralBlock({ userId }: ReferralBlockProps) {
     try {
       await navigator.clipboard.writeText(referralLink);
     } catch {
-      // Fallback для старих WebView — через input
       const input = document.createElement('input');
       input.value = referralLink;
       document.body.appendChild(input);
@@ -73,7 +63,7 @@ export function ReferralBlock({ userId }: ReferralBlockProps) {
     setTimeout(() => setCopied(false), COPIED_FEEDBACK_MS);
   };
 
-  if (!referralLink) return null;
+  if (linkError) return null;
 
   return (
     <div className="referral-block">
@@ -94,13 +84,14 @@ export function ReferralBlock({ userId }: ReferralBlockProps) {
       />
 
       <div className="referral-block__link-row">
-        <span className="referral-block__link-text" title={referralLink}>
-          {referralLink}
+        <span className="referral-block__link-text" title={referralLink ?? ''}>
+          {referralLink ?? '…'}
         </span>
         <button
           type="button"
           className={`referral-block__copy-btn${copied ? ' referral-block__copy-btn--copied' : ''}`}
           onClick={() => void handleCopy()}
+          disabled={!referralLink}
           aria-label={copied ? t('referralCopied') : t('referralCopyBtn')}
         >
           {copied ? <CheckIcon /> : <CopyIcon />}

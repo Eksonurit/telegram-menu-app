@@ -45,7 +45,7 @@ export function buildReferralLink(
   botUsername: string,
   miniAppShortName?: string,
 ): string {
-  const username = botUsername.replace(/^@/, '').trim();
+  const username = botUsername.replace(/^@/, '').trim().toLowerCase();
   const startapp = `${REFERRAL_PREFIX}${userId}`;
 
   if (miniAppShortName?.trim()) {

@@ -14,6 +14,11 @@ export interface ClaimReferralResult {
   bonus: number;
 }
 
+export interface ReferralLinkResult {
+  link: string;
+  botUsername: string;
+}
+
 interface ApiErrorBody {
   message?: string;
 }
@@ -59,4 +64,32 @@ export async function claimReferral(
   }
 
   return (await response.json()) as ClaimReferralResult;
+}
+
+/**
+ * Отримує реферальне посилання з сервера.
+ * Username бота береться з Telegram getMe — завжди коректний для t.me.
+ */
+export async function fetchReferralLink(): Promise<ReferralLinkResult> {
+  const initData = getTelegramInitData();
+  if (!initData) throw new ApiError('errorNoInitData', 401);
+
+  let response: Response;
+  try {
+    response = await fetch(buildApiEndpoint('/referral/link'), {
+      method: 'GET',
+      headers: {
+        'X-Telegram-Init-Data': initData,
+      },
+    });
+  } catch {
+    throw new ApiError('errorAnalysisFailed', 0);
+  }
+
+  if (!response.ok) {
+    const message = await parseServerError(response);
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as ReferralLinkResult;
 }
