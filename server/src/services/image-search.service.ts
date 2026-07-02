@@ -10,8 +10,14 @@
  * Помилки ніколи не кидаються назовні — фото вважається необов'язковим.
  */
 
-/** Час очікування HTTP-запиту до image API (мс) */
-const FETCH_TIMEOUT_MS = 5_000;
+/** Час очікування HTTP-запиту до image API (мс). На Railway/PaaS мережа повільніша — 15с. */
+const DEFAULT_FETCH_TIMEOUT_MS = 15_000;
+
+function getFetchTimeoutMs(): number {
+  const raw = process.env.IMAGE_SEARCH_TIMEOUT_MS;
+  const parsed = raw ? Number(raw) : NaN;
+  return Number.isFinite(parsed) && parsed >= 3_000 ? parsed : DEFAULT_FETCH_TIMEOUT_MS;
+}
 
 /** Базові URL провайдерів */
 const PEXELS_URL   = 'https://api.pexels.com/v1/search';
@@ -50,7 +56,7 @@ interface UnsplashResponse {
 async function fetchWithTimeout(
   url: string,
   init: RequestInit,
-  timeoutMs = FETCH_TIMEOUT_MS,
+  timeoutMs = getFetchTimeoutMs(),
 ): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -60,6 +66,10 @@ async function fetchWithTimeout(
   } finally {
     clearTimeout(timer);
   }
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AbortError';
 }
 
 // ─── Pexels ───────────────────────────────────────────────────────────────────
@@ -125,10 +135,33 @@ async function searchUnsplash(query: string): Promise<string | null> {
 // ─── Публічний API ────────────────────────────────────────────────────────────
 
 /**
+ * Безпечний виклик провайдера: при таймауті/мережевій помилці повертає null,
+ * не перериваючи fallback на наступний провайдер.
+ */
+async function tryProvider(
+  provider: 'Pexels' | 'Unsplash',
+  searchFn: (query: string) => Promise<string | null>,
+  query: string,
+): Promise<string | null> {
+  try {
+    return await searchFn(query);
+  } catch (error) {
+    if (isAbortError(error)) {
+      console.warn(
+        `[image-search] ${provider} таймаут (${getFetchTimeoutMs()}ms) для: "${query}"`,
+      );
+    } else {
+      console.warn(`[image-search] ${provider} помилка для: "${query}"`, error);
+    }
+    return null;
+  }
+}
+
+/**
  * Шукає якісну фотографію страви за English search query.
  *
  * Порядок провайдерів: Pexels → Unsplash.
- * Якщо обидва недоступні або ключі не налаштовані — повертає null.
+ * Якщо Pexels таймаутить — автоматично пробуємо Unsplash (раніше fallback губився).
  * Ніколи не кидає винятків (non-critical операція).
  *
  * @param searchQuery — English пошуковий запит, наприклад "pasta carbonara"
@@ -136,11 +169,8 @@ async function searchUnsplash(query: string): Promise<string | null> {
 export async function fetchFoodImage(searchQuery: string): Promise<string | null> {
   if (!searchQuery.trim()) return null;
 
-  try {
-    const result = (await searchPexels(searchQuery)) ?? (await searchUnsplash(searchQuery));
-    return result;
-  } catch (error) {
-    console.warn('[image-search] Не вдалося отримати фото для:', searchQuery, error);
-    return null;
-  }
+  const pexelsResult = await tryProvider('Pexels', searchPexels, searchQuery);
+  if (pexelsResult) return pexelsResult;
+
+  return tryProvider('Unsplash', searchUnsplash, searchQuery);
 }
