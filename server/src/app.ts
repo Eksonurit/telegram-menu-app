@@ -17,6 +17,7 @@ export function createApp(config: ServerConfig): express.Application {
   //  • https://telegram.org/js/telegram-web-app.js  → немає initData, «поза Telegram»
   //  • blob: URL прев’ю фото                          → зламані прев’ю
   //  • https://flagcdn.com                          → зламані прапори мов
+  //  • https://images.pexels.com                  → фото страв з Pexels
   //
   // На Vite dev (5173) CSP немає — тому локально через ngrok:5173 все працювало,
   // а через Express/Railway (порт 3000) — ні.
@@ -27,7 +28,14 @@ export function createApp(config: ServerConfig): express.Application {
           defaultSrc: ["'self'"],
           scriptSrc: ["'self'", 'https://telegram.org'],
           styleSrc: ["'self'", "'unsafe-inline'"],
-          imgSrc: ["'self'", 'data:', 'blob:', 'https://flagcdn.com'],
+          imgSrc: [
+            "'self'",
+            'data:',
+            'blob:',
+            'https://flagcdn.com',
+            'https://images.pexels.com',
+            'https://images.unsplash.com',
+          ],
           connectSrc: ["'self'"],
           fontSrc: ["'self'"],
           objectSrc: ["'none'"],
